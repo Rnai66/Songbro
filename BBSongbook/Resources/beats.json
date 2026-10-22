@@ -1,0 +1,1168 @@
+{
+ "project": "rnai2026",
+ "folders": [
+  {
+   "number": 1,
+   "name": "Ballad-mini",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Ballad 2"
+    },
+    {
+     "number": 2,
+     "name": "Ballad 3"
+    },
+    {
+     "number": 3,
+     "name": "Ballad 6"
+    },
+    {
+     "number": 4,
+     "name": "Ballad 8"
+    },
+    {
+     "number": 5,
+     "name": "Ballad 13"
+    }
+   ]
+  },
+  {
+   "number": 2,
+   "name": "Blues",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Blues 1"
+    },
+    {
+     "number": 2,
+     "name": "Blues 2"
+    },
+    {
+     "number": 3,
+     "name": "Blues 3- 6/8"
+    },
+    {
+     "number": 4,
+     "name": "Blues 4- 6/8"
+    },
+    {
+     "number": 5,
+     "name": "Blues 5- 6/8"
+    },
+    {
+     "number": 6,
+     "name": "Blues 6- 6/8"
+    },
+    {
+     "number": 7,
+     "name": "Blues 7- 6/8"
+    },
+    {
+     "number": 8,
+     "name": "Blues 8- 12/8"
+    },
+    {
+     "number": 9,
+     "name": "Blues 9- 12/8"
+    },
+    {
+     "number": 10,
+     "name": "Blues 10- 12/8"
+    }
+   ]
+  },
+  {
+   "number": 3,
+   "name": "Brazilian",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Bossa Nova"
+    },
+    {
+     "number": 2,
+     "name": "Bossa Samba"
+    },
+    {
+     "number": 3,
+     "name": "Bossa Nova 2"
+    },
+    {
+     "number": 4,
+     "name": "Samba"
+    },
+    {
+     "number": 5,
+     "name": "Samba Alt Kick"
+    },
+    {
+     "number": 6,
+     "name": "Partido Alto"
+    },
+    {
+     "number": 7,
+     "name": "Batukada"
+    },
+    {
+     "number": 8,
+     "name": "Samba Funk"
+    },
+    {
+     "number": 9,
+     "name": "Samba Reggae"
+    },
+    {
+     "number": 10,
+     "name": "Afoxe"
+    }
+   ]
+  },
+  {
+   "number": 4,
+   "name": "Brushes Beats",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Brushes 1- Str 8"
+    },
+    {
+     "number": 2,
+     "name": "Brushes 2- Str 16ths"
+    },
+    {
+     "number": 3,
+     "name": "Brushes 3- Half time shuffle"
+    },
+    {
+     "number": 4,
+     "name": "Brushes 4- 3/4 Shuffle Waltz"
+    },
+    {
+     "number": 5,
+     "name": "Brushes 5- 3/4 Half time Shuffle Pop"
+    },
+    {
+     "number": 6,
+     "name": "Brushes 6- 5/4 simple"
+    },
+    {
+     "number": 7,
+     "name": "Brushes 7- 7/8 simple"
+    },
+    {
+     "number": 8,
+     "name": "Brushes 8- Str 8"
+    },
+    {
+     "number": 9,
+     "name": "Brushes 9- Bossa Nova brushes"
+    },
+    {
+     "number": 10,
+     "name": "Brushes 10- Spanish Rumba"
+    }
+   ]
+  },
+  {
+   "number": 5,
+   "name": "Country",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Country 1- Shuffle"
+    },
+    {
+     "number": 2,
+     "name": "Country 2- Train Shuffle"
+    },
+    {
+     "number": 3,
+     "name": "Country 3- 2nd line beat"
+    },
+    {
+     "number": 4,
+     "name": "Country 4- Shuffle"
+    },
+    {
+     "number": 5,
+     "name": "Country 5- Brushes Train"
+    },
+    {
+     "number": 6,
+     "name": "Country 6- Str 8"
+    },
+    {
+     "number": 7,
+     "name": "Country 7- Brushes Shuffle"
+    },
+    {
+     "number": 8,
+     "name": "Country 8- Str 8"
+    }
+   ]
+  },
+  {
+   "number": 6,
+   "name": "Drum & Bass",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Drum&Bass 1"
+    },
+    {
+     "number": 2,
+     "name": "Drum&Bass 2"
+    },
+    {
+     "number": 3,
+     "name": "Drum&Bass 3"
+    },
+    {
+     "number": 4,
+     "name": "Drum&Bass 4"
+    },
+    {
+     "number": 5,
+     "name": "Drum&Bass 5"
+    },
+    {
+     "number": 6,
+     "name": "Drum&Bass 6"
+    },
+    {
+     "number": 7,
+     "name": "Drum&Bass 7"
+    },
+    {
+     "number": 8,
+     "name": "Drum&Bass 8"
+    },
+    {
+     "number": 9,
+     "name": "Drum&Bass 9"
+    },
+    {
+     "number": 10,
+     "name": "Drum&Bass 10"
+    }
+   ]
+  },
+  {
+   "number": 7,
+   "name": "Funk",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Funk 1- str 16ths"
+    },
+    {
+     "number": 2,
+     "name": "Funk 2- str 16ths"
+    },
+    {
+     "number": 3,
+     "name": "Funk 3- str 16ths"
+    },
+    {
+     "number": 4,
+     "name": "Funk 4- str 16ths"
+    },
+    {
+     "number": 5,
+     "name": "Funk 5- str 16ths"
+    },
+    {
+     "number": 6,
+     "name": "Funk 6- swung"
+    },
+    {
+     "number": 7,
+     "name": "Funk 7- swung"
+    },
+    {
+     "number": 8,
+     "name": "Funk 8- swung"
+    },
+    {
+     "number": 9,
+     "name": "Funk 9- swung"
+    },
+    {
+     "number": 10,
+     "name": "Funk 10- swung"
+    }
+   ]
+  },
+  {
+   "number": 8,
+   "name": "Hand Percussion BB Mini",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Straight 8th"
+    },
+    {
+     "number": 2,
+     "name": "Straight 16th"
+    },
+    {
+     "number": 3,
+     "name": "Ballad"
+    },
+    {
+     "number": 4,
+     "name": "Shuffle Funk"
+    },
+    {
+     "number": 5,
+     "name": "Shuffle"
+    }
+   ]
+  },
+  {
+   "number": 9,
+   "name": "Hip Hop",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Hip Hop 1"
+    },
+    {
+     "number": 2,
+     "name": "Hip Hop 2"
+    },
+    {
+     "number": 3,
+     "name": "Hip Hop 3"
+    },
+    {
+     "number": 4,
+     "name": "Hip Hop 4"
+    },
+    {
+     "number": 5,
+     "name": "Hip Hop 5"
+    },
+    {
+     "number": 6,
+     "name": "Hip Hop 6- swung"
+    },
+    {
+     "number": 7,
+     "name": "Hip Hop 7- swung"
+    },
+    {
+     "number": 8,
+     "name": "Hip Hop 8- swung"
+    },
+    {
+     "number": 9,
+     "name": "Hip Hop 9- swung"
+    },
+    {
+     "number": 10,
+     "name": "Hip Hop 10- swung"
+    }
+   ]
+  },
+  {
+   "number": 10,
+   "name": "Jazz",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Jazz 1- med swing"
+    },
+    {
+     "number": 2,
+     "name": "Jazz 2- med Basie swing"
+    },
+    {
+     "number": 3,
+     "name": "Jazz 3- med swing"
+    },
+    {
+     "number": 4,
+     "name": "Jazz 4- med swing walk"
+    },
+    {
+     "number": 5,
+     "name": "Jazz 5- med up swing"
+    },
+    {
+     "number": 6,
+     "name": "Jazz 6- med up complex"
+    },
+    {
+     "number": 7,
+     "name": "Jazz 7- up tempo Bebop"
+    },
+    {
+     "number": 8,
+     "name": "Jazz 8- modal open swing"
+    },
+    {
+     "number": 9,
+     "name": "Jazz 9- 3/4 swing"
+    },
+    {
+     "number": 10,
+     "name": "Jazz 10- Jazz eight"
+    }
+   ]
+  },
+  {
+   "number": 11,
+   "name": "Latin",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Bolero"
+    },
+    {
+     "number": 2,
+     "name": "Bomba"
+    },
+    {
+     "number": 3,
+     "name": "Calypso"
+    },
+    {
+     "number": 4,
+     "name": "Cha Cha (2-3)"
+    },
+    {
+     "number": 5,
+     "name": "Clave 2-3"
+    },
+    {
+     "number": 6,
+     "name": "Clave 3-2"
+    },
+    {
+     "number": 7,
+     "name": "Clave (Rumba) 2-3"
+    },
+    {
+     "number": 8,
+     "name": "Clave (Rumba_ 3-2"
+    },
+    {
+     "number": 9,
+     "name": "Danzon (2-3)"
+    },
+    {
+     "number": 10,
+     "name": "Mambo (2-3)"
+    },
+    {
+     "number": 11,
+     "name": "Merengue (3-2)"
+    },
+    {
+     "number": 12,
+     "name": "Plena"
+    },
+    {
+     "number": 13,
+     "name": "Rumba Columbia (3-2)"
+    },
+    {
+     "number": 14,
+     "name": "Rumba Guaguanco (3-2)"
+    },
+    {
+     "number": 15,
+     "name": "Son (2-3)"
+    },
+    {
+     "number": 16,
+     "name": "Son Montuno (2-3)"
+    }
+   ]
+  },
+  {
+   "number": 12,
+   "name": "Marching",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Marching 1"
+    },
+    {
+     "number": 2,
+     "name": "Marching 2"
+    },
+    {
+     "number": 3,
+     "name": "Marching 3"
+    },
+    {
+     "number": 4,
+     "name": "Marching 4"
+    },
+    {
+     "number": 5,
+     "name": "Marching 5"
+    },
+    {
+     "number": 6,
+     "name": "Marching 6"
+    },
+    {
+     "number": 7,
+     "name": "Marching 7"
+    },
+    {
+     "number": 8,
+     "name": "Marching 8"
+    },
+    {
+     "number": 9,
+     "name": "Marching 9"
+    }
+   ]
+  },
+  {
+   "number": 13,
+   "name": "Metal",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Metal 1"
+    },
+    {
+     "number": 2,
+     "name": "Metal 2"
+    },
+    {
+     "number": 3,
+     "name": "Metal 3"
+    },
+    {
+     "number": 4,
+     "name": "Metal 4"
+    },
+    {
+     "number": 5,
+     "name": "Metal 5"
+    },
+    {
+     "number": 6,
+     "name": "Metal 6"
+    },
+    {
+     "number": 7,
+     "name": "Metal 7"
+    },
+    {
+     "number": 8,
+     "name": "Metal 8"
+    },
+    {
+     "number": 9,
+     "name": "Metal 9"
+    },
+    {
+     "number": 10,
+     "name": "Metal 10"
+    },
+    {
+     "number": 11,
+     "name": "Metal 11"
+    },
+    {
+     "number": 12,
+     "name": "Metal 12"
+    }
+   ]
+  },
+  {
+   "number": 14,
+   "name": "Odd Time",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Odd Time 1- 5/4"
+    },
+    {
+     "number": 2,
+     "name": "Odd Time 2- 5/8"
+    },
+    {
+     "number": 3,
+     "name": "Odd Time 3- 6/8"
+    },
+    {
+     "number": 4,
+     "name": "Odd Time 4- 6/8 feels like 3/4"
+    },
+    {
+     "number": 5,
+     "name": "Odd Time 5- 7/4"
+    },
+    {
+     "number": 6,
+     "name": "Odd Time 6- 7/8"
+    },
+    {
+     "number": 7,
+     "name": "Odd Time 7- 9/4"
+    },
+    {
+     "number": 8,
+     "name": "Odd Time 8- 9/8"
+    },
+    {
+     "number": 9,
+     "name": "Odd Time 9- 9/4 Ethno"
+    },
+    {
+     "number": 10,
+     "name": "Odd Time 10- 7/8"
+    }
+   ]
+  },
+  {
+   "number": 15,
+   "name": "Oldies",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Oldie 1- 4 on snare"
+    },
+    {
+     "number": 2,
+     "name": "Oldie 2- 4 on snare"
+    },
+    {
+     "number": 3,
+     "name": "Oldie 3- 4 on snare"
+    },
+    {
+     "number": 4,
+     "name": "Oldie Song 4- Bum cha ka"
+    },
+    {
+     "number": 5,
+     "name": "Oldie 5- Bum cha ka more"
+    },
+    {
+     "number": 6,
+     "name": "Oldie 6"
+    }
+   ]
+  },
+  {
+   "number": 16,
+   "name": "Pop",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Pop 1- 16ths"
+    },
+    {
+     "number": 2,
+     "name": "Pop 2- 16ths"
+    },
+    {
+     "number": 3,
+     "name": "Pop 3- 16ths"
+    },
+    {
+     "number": 4,
+     "name": "Pop 4- 16ths"
+    },
+    {
+     "number": 5,
+     "name": "Pop 5- 16ths"
+    },
+    {
+     "number": 6,
+     "name": "Pop 6- 8ths"
+    },
+    {
+     "number": 7,
+     "name": "Pop 7- anticipated 1"
+    },
+    {
+     "number": 8,
+     "name": "Pop 8- 8ths"
+    },
+    {
+     "number": 9,
+     "name": "Pop 9- 8ths"
+    },
+    {
+     "number": 10,
+     "name": "Pop 10- 8ths"
+    },
+    {
+     "number": 11,
+     "name": "Pop 11- 16ths"
+    },
+    {
+     "number": 12,
+     "name": "Pop 12- 8ths"
+    }
+   ]
+  },
+  {
+   "number": 17,
+   "name": "Punk",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Punk 1"
+    },
+    {
+     "number": 2,
+     "name": "Punk 2"
+    },
+    {
+     "number": 3,
+     "name": "Punk 3"
+    },
+    {
+     "number": 4,
+     "name": "Punk 4"
+    },
+    {
+     "number": 5,
+     "name": "Punk 5"
+    }
+   ]
+  },
+  {
+   "number": 18,
+   "name": "R&B",
+   "beats": [
+    {
+     "number": 1,
+     "name": "R&B 1"
+    },
+    {
+     "number": 2,
+     "name": "R&B 2"
+    },
+    {
+     "number": 3,
+     "name": "R&B 3"
+    },
+    {
+     "number": 4,
+     "name": "R&B 4"
+    },
+    {
+     "number": 5,
+     "name": "R&B 5"
+    },
+    {
+     "number": 6,
+     "name": "R&B 6"
+    },
+    {
+     "number": 7,
+     "name": "R&B 7"
+    },
+    {
+     "number": 8,
+     "name": "R&B 8"
+    },
+    {
+     "number": 9,
+     "name": "R&B 9"
+    },
+    {
+     "number": 10,
+     "name": "R&B 10"
+    }
+   ]
+  },
+  {
+   "number": 19,
+   "name": "Rock",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Rock 1"
+    },
+    {
+     "number": 2,
+     "name": "Rock 2"
+    },
+    {
+     "number": 3,
+     "name": "Rock 3"
+    },
+    {
+     "number": 4,
+     "name": "Rock 4"
+    },
+    {
+     "number": 5,
+     "name": "Rock 5- Jungle Toms"
+    },
+    {
+     "number": 6,
+     "name": "Rock 6- Jungle Toms"
+    },
+    {
+     "number": 7,
+     "name": "Rock 7"
+    },
+    {
+     "number": 8,
+     "name": "Rock 8"
+    },
+    {
+     "number": 9,
+     "name": "Rock 9"
+    },
+    {
+     "number": 10,
+     "name": "Rock 10"
+    },
+    {
+     "number": 11,
+     "name": "Rock 11"
+    },
+    {
+     "number": 12,
+     "name": "Rock 12"
+    },
+    {
+     "number": 13,
+     "name": "Rock 13"
+    },
+    {
+     "number": 14,
+     "name": "Rock 14- Jungle Toms"
+    }
+   ]
+  },
+  {
+   "number": 20,
+   "name": "Reggae",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Reggae 1- backbeat"
+    },
+    {
+     "number": 2,
+     "name": "Reggae 2- one drop str"
+    },
+    {
+     "number": 3,
+     "name": "Reggae 3- one drop str"
+    },
+    {
+     "number": 4,
+     "name": "Reggae 4- one drop str"
+    },
+    {
+     "number": 5,
+     "name": "Reggae 5- Basic one drop str"
+    },
+    {
+     "number": 6,
+     "name": "Reggae 6- stomp"
+    },
+    {
+     "number": 7,
+     "name": "Reggae 7- swung one drop"
+    },
+    {
+     "number": 8,
+     "name": "Reggae 8- swung one drop"
+    },
+    {
+     "number": 9,
+     "name": "Reggae 9- swung stomp"
+    },
+    {
+     "number": 10,
+     "name": "Reggae 10- Basic swung"
+    }
+   ]
+  },
+  {
+   "number": 21,
+   "name": "Techno",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Techno 1"
+    },
+    {
+     "number": 2,
+     "name": "Techno 2"
+    },
+    {
+     "number": 3,
+     "name": "Techno 3"
+    },
+    {
+     "number": 4,
+     "name": "Techno 4"
+    },
+    {
+     "number": 5,
+     "name": "Techno 5"
+    },
+    {
+     "number": 6,
+     "name": "Techno 6"
+    }
+   ]
+  },
+  {
+   "number": 22,
+   "name": "Voice-Beatbox",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Beatbox 1"
+    },
+    {
+     "number": 2,
+     "name": "Beatbox 2"
+    },
+    {
+     "number": 3,
+     "name": "Beatbox 3"
+    },
+    {
+     "number": 4,
+     "name": "Beatbox 4"
+    },
+    {
+     "number": 5,
+     "name": "Beatbox 5"
+    },
+    {
+     "number": 6,
+     "name": "Beatbox 6- swung"
+    },
+    {
+     "number": 7,
+     "name": "Beatbox 7- swung"
+    },
+    {
+     "number": 8,
+     "name": "Beatbox 8- swung"
+    },
+    {
+     "number": 9,
+     "name": "Beatbox 9- swung"
+    },
+    {
+     "number": 10,
+     "name": "Beatbox 10- swung"
+    }
+   ]
+  },
+  {
+   "number": 23,
+   "name": "World",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Tango"
+    },
+    {
+     "number": 2,
+     "name": "Piazzolla"
+    },
+    {
+     "number": 3,
+     "name": "Polka"
+    },
+    {
+     "number": 4,
+     "name": "Polka var"
+    },
+    {
+     "number": 5,
+     "name": "Serbian Ethno"
+    },
+    {
+     "number": 6,
+     "name": "Waltz"
+    },
+    {
+     "number": 7,
+     "name": "Spanish Buleria"
+    },
+    {
+     "number": 8,
+     "name": "Spanish Rumba"
+    },
+    {
+     "number": 9,
+     "name": "Buleria w brushes"
+    },
+    {
+     "number": 10,
+     "name": "Spanish 3/4 beat- brushes"
+    }
+   ]
+  },
+  {
+   "number": 24,
+   "name": "Metronome",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Metronome- Quarters- no accent"
+    },
+    {
+     "number": 2,
+     "name": "Metronome- 2/4"
+    },
+    {
+     "number": 3,
+     "name": "Metronome- 3/4"
+    },
+    {
+     "number": 4,
+     "name": "Metronome- 4/4"
+    },
+    {
+     "number": 5,
+     "name": "Metronome- 5/4"
+    },
+    {
+     "number": 6,
+     "name": "Metronome- 6/4"
+    },
+    {
+     "number": 7,
+     "name": "Metronome- 6/8"
+    },
+    {
+     "number": 8,
+     "name": "Metronome- 7/4"
+    },
+    {
+     "number": 9,
+     "name": "Metronome- 7/8"
+    },
+    {
+     "number": 10,
+     "name": "Metronome- 9/8"
+    },
+    {
+     "number": 11,
+     "name": "Metronome- 11/8"
+    }
+   ]
+  },
+  {
+   "number": 25,
+   "name": "David's Beats",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Ska"
+    },
+    {
+     "number": 2,
+     "name": "In my place"
+    },
+    {
+     "number": 3,
+     "name": "Shuffle Funk"
+    },
+    {
+     "number": 4,
+     "name": "Pop-Rock Str8"
+    },
+    {
+     "number": 5,
+     "name": "16ths Funk"
+    },
+    {
+     "number": 6,
+     "name": "Shuffle Beat"
+    },
+    {
+     "number": 7,
+     "name": "Wonderful World"
+    },
+    {
+     "number": 8,
+     "name": "Times Change"
+    },
+    {
+     "number": 9,
+     "name": "Singular Sound video"
+    }
+   ]
+  },
+  {
+   "number": 26,
+   "name": "Test Beats",
+   "beats": [
+    {
+     "number": 1,
+     "name": "Test Drumset Components Volumes"
+    }
+   ]
+  },
+  {
+   "number": 27,
+   "name": "Find more at library.myBeatBuddy.com",
+   "beats": []
+  },
+  {
+   "number": 28,
+   "name": "Thai Style",
+   "beats": [
+    {
+     "number": 1,
+     "name": "3 Cha"
+    },
+    {
+     "number": 2,
+     "name": "Morlum 1"
+    },
+    {
+     "number": 3,
+     "name": "Morlum 2"
+    },
+    {
+     "number": 4,
+     "name": "Thai Dancing 1"
+    },
+    {
+     "number": 5,
+     "name": "Thai Disco"
+    },
+    {
+     "number": 6,
+     "name": "Blues"
+    },
+    {
+     "number": 7,
+     "name": "Thai Pop"
+    },
+    {
+     "number": 8,
+     "name": "Thai Pop 2"
+    },
+    {
+     "number": 9,
+     "name": "Thai pop 3"
+    },
+    {
+     "number": 10,
+     "name": "Deung Dun"
+    }
+   ]
+  }
+ ]
+}
