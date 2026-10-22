@@ -3,7 +3,12 @@ import SwiftUI
 /// Stage view: lyrics, rhythm-machine controls, beat-synced auto scroll.
 struct PerformanceView: View {
     let song: Song
+    /// Neighbouring songs in the set on screen (nil at either end).
+    var previous: Song? = nil
+    var next: Song? = nil
     var onEdit: () -> Void
+    /// Opens another song (next/previous in the set).
+    var onOpen: (Song) -> Void = { _ in }
 
     @Environment(StageMIDI.self) private var midi
     @AppStorage("autoSendOnOpen") private var autoSend = true
@@ -48,9 +53,12 @@ struct PerformanceView: View {
         .focusable()
         .focused($focused)
         .focusEffectDisabled()
-        // Bluetooth page-turner pedals usually send arrow / page keys.
-        .onKeyPress(keys: [.downArrow, .rightArrow, .pageDown]) { _ in step(1); return .handled }
-        .onKeyPress(keys: [.upArrow, .leftArrow, .pageUp]) { _ in step(-1); return .handled }
+        // Bluetooth page-turner pedals send arrow / page keys:
+        // down/up and page keys scroll the sheet, right/left change song in the set.
+        .onKeyPress(keys: [.downArrow, .pageDown]) { _ in step(1); return .handled }
+        .onKeyPress(keys: [.upArrow, .pageUp]) { _ in step(-1); return .handled }
+        .onKeyPress(.rightArrow) { go(to: next) ? .handled : .ignored }
+        .onKeyPress(.leftArrow) { go(to: previous) ? .handled : .ignored }
         .onKeyPress(.space) { togglePlay(); return .handled }
         .onAppear {
             focused = true
@@ -74,8 +82,8 @@ struct PerformanceView: View {
                 HStack(spacing: 10) {
                     infoChip("คีย์", song.key.isEmpty ? "-" : ChordPro.transposeChord(song.key, by: transpose))
                     infoChip("BPM", "\(song.bpm)")
-                    infoChip("จังหวะ BeatBuddy ▾",
-                             BeatCatalog.bundled.label(folder: song.beatFolder, beat: song.beatNumber) ?? "แตะเพื่อเลือก")
+                    infoChip(midi.active == .nuxDualLoop ? "NUX ▾" : "จังหวะ ▾",
+                             song.rhythmLabel(for: midi.active) ?? "แตะเพื่อเลือก")
                 }
             }
             .buttonStyle(.plain)
@@ -84,12 +92,33 @@ struct PerformanceView: View {
                     .frame(minWidth: 400, idealWidth: 440, minHeight: 720)
             }
             Spacer(minLength: 0)
-            if !song.artist.isEmpty {
-                Text(song.artist).foregroundStyle(.secondary).lineLimit(1)
-            }
+            setNavigation
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
+    }
+
+    /// ◀ previous · next ▶ within the set, with the next song's name so the
+    /// band can see what's coming.
+    private var setNavigation: some View {
+        HStack(spacing: 8) {
+            Button { go(to: previous) } label: {
+                Image(systemName: "chevron.backward")
+                    .frame(width: 28, height: 28)
+            }
+            .disabled(previous == nil)
+            .accessibilityLabel("เพลงก่อนหน้า")
+
+            Button { go(to: next) } label: {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("ถัดไป ▶").font(.caption).foregroundStyle(.secondary)
+                    Text(next?.title ?? "จบ set").font(.headline).lineLimit(1)
+                }
+                .frame(maxWidth: 220, alignment: .trailing)
+            }
+            .disabled(next == nil)
+        }
+        .buttonStyle(.bordered)
     }
 
     private func infoChip(_ title: String, _ value: String) -> some View {
@@ -193,6 +222,20 @@ struct PerformanceView: View {
         }
         .padding()
         .background(.bar)
+    }
+
+    /// Opens another song in the set. The current song is over, so the drums
+    /// stop first; the new song sends its own beat/memory and BPM when it opens.
+    @discardableResult
+    private func go(to song: Song?) -> Bool {
+        guard let song else { return false }
+        if playing {
+            midi.stop()
+            playing = false
+        }
+        autoScroll = false
+        onOpen(song)
+        return true
     }
 
     private func togglePlay() {

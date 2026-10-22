@@ -111,7 +111,11 @@ struct ContentView: View {
             }
         } detail: {
             if let id = selectedID, let song = store.songs.first(where: { $0.id == id }) {
-                PerformanceView(song: song, onEdit: { editing = song })
+                PerformanceView(song: song,
+                                previous: neighbor(of: song, by: -1),
+                                next: neighbor(of: song, by: 1),
+                                onEdit: { editing = song },
+                                onOpen: { selectedID = $0.id })
                     .id(song.id)
             } else {
                 ContentUnavailableView("เลือกเพลง", systemImage: "music.mic",
@@ -156,6 +160,15 @@ struct ContentView: View {
         }
         .padding(.vertical, 8)
         .selectionDisabled()
+    }
+
+    /// The song before/after this one in the list on screen — the current set
+    /// (folder), in the order its numbered file names give.
+    private func neighbor(of song: Song, by offset: Int) -> Song? {
+        let list = songs
+        guard let i = list.firstIndex(where: { $0.id == song.id }),
+              list.indices.contains(i + offset) else { return nil }
+        return list[i + offset]
     }
 
     private func refreshLibrary() {
