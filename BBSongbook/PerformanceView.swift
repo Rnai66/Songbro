@@ -3,9 +3,8 @@ import SwiftUI
 /// Stage view: lyrics, rhythm-machine controls, beat-synced auto scroll.
 struct PerformanceView: View {
     let song: Song
-    /// Neighbouring songs in the set on screen (nil at either end).
-    var previous: Song? = nil
-    var next: Song? = nil
+    /// The set on screen (folder songs in file-name order), to pick the next song from.
+    var setSongs: [Song] = []
     var onEdit: () -> Void
     /// Opens another song (next/previous in the set).
     var onOpen: (Song) -> Void = { _ in }
@@ -23,7 +22,23 @@ struct PerformanceView: View {
     /// Moves the lyric sheet image (songs from the song folder).
     @State private var sheetCommand = ScrollCommand()
     @State private var showQuickSettings = false
+    @State private var showSetPicker = false
+    /// Song picked with the pedal but not opened yet — a second press opens it,
+    /// so one stray tap never changes song mid-performance.
+    @State private var cued: Song?
     @FocusState private var focused: Bool
+
+    private var setIndex: Int? { setSongs.firstIndex { $0.id == song.id } }
+
+    private var previous: Song? {
+        guard let i = setIndex, i > 0 else { return nil }
+        return setSongs[i - 1]
+    }
+
+    private var next: Song? {
+        guard let i = setIndex, i + 1 < setSongs.count else { return nil }
+        return setSongs[i + 1]
+    }
 
     private var lines: [ChordPro.Line] {
         ChordPro.parse(ChordPro.transpose(song.lyrics, by: transpose))
@@ -36,6 +51,9 @@ struct PerformanceView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
+            if let cued {
+                cueBanner(cued)
+            }
             Divider()
             if let path = song.filePath {
                 SheetImageView(path: path, command: sheetCommand)
@@ -54,11 +72,19 @@ struct PerformanceView: View {
         .focused($focused)
         .focusEffectDisabled()
         // Bluetooth page-turner pedals send arrow / page keys:
-        // down/up and page keys scroll the sheet, right/left change song in the set.
+        // down/up and page keys scroll the sheet; right/left pick a song in the
+        // set in two steps (right = cue next / open the cued song, left = cue
+        // previous / cancel the cue).
         .onKeyPress(keys: [.downArrow, .pageDown]) { _ in step(1); return .handled }
         .onKeyPress(keys: [.upArrow, .pageUp]) { _ in step(-1); return .handled }
-        .onKeyPress(.rightArrow) { go(to: next) ? .handled : .ignored }
-        .onKeyPress(.leftArrow) { go(to: previous) ? .handled : .ignored }
+        .onKeyPress(.rightArrow) {
+            if let cued { go(to: cued) } else { cued = next }
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            if cued != nil { cued = nil } else { cued = previous }
+            return .handled
+        }
         .onKeyPress(.space) { togglePlay(); return .handled }
         .onAppear {
             focused = true
@@ -98,27 +124,77 @@ struct PerformanceView: View {
         .padding(.vertical, 10)
     }
 
-    /// ◀ previous · next ▶ within the set, with the next song's name so the
-    /// band can see what's coming.
+    /// Shows what comes next in the set; tapping opens the set list to choose
+    /// any song — nothing changes until a song is picked.
     private var setNavigation: some View {
-        HStack(spacing: 8) {
-            Button { go(to: previous) } label: {
-                Image(systemName: "chevron.backward")
-                    .frame(width: 28, height: 28)
+        Button { showSetPicker = true } label: {
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("ถัดไป ▾").font(.caption).foregroundStyle(.secondary)
+                Text(next?.title ?? "จบ set").font(.headline).lineLimit(1)
             }
-            .disabled(previous == nil)
-            .accessibilityLabel("เพลงก่อนหน้า")
-
-            Button { go(to: next) } label: {
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("ถัดไป ▶").font(.caption).foregroundStyle(.secondary)
-                    Text(next?.title ?? "จบ set").font(.headline).lineLimit(1)
-                }
-                .frame(maxWidth: 220, alignment: .trailing)
-            }
-            .disabled(next == nil)
+            .frame(maxWidth: 220, alignment: .trailing)
         }
         .buttonStyle(.bordered)
+        .disabled(setSongs.count < 2)
+        .popover(isPresented: $showSetPicker, arrowEdge: .top) {
+            setPicker
+                .frame(minWidth: 360, idealWidth: 400, minHeight: 480)
+        }
+    }
+
+    /// The whole set; the current song is marked and the next one is first in line.
+    private var setPicker: some View {
+        NavigationStack {
+            ScrollViewReader { proxy in
+                List(Array(setSongs.enumerated()), id: \.element.id) { index, item in
+                    Button {
+                        showSetPicker = false
+                        go(to: item)
+                    } label: {
+                        HStack {
+                            Text("\(index + 1)").monospacedDigit().foregroundStyle(.secondary)
+                                .frame(width: 28, alignment: .trailing)
+                            Text(item.title).foregroundStyle(.primary)
+                            Spacer()
+                            if item.id == song.id {
+                                Text("กำลังเล่น").font(.caption.bold()).foregroundStyle(.green)
+                            } else if item.id == next?.id {
+                                Text("ถัดไป").font(.caption.bold()).foregroundStyle(.tint)
+                            }
+                        }
+                    }
+                    .disabled(item.id == song.id)
+                    .id(item.id)
+                }
+                .onAppear { proxy.scrollTo(song.id, anchor: .top) }
+            }
+            .navigationTitle("เลือกเพลงถัดไป")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                Button("ปิด") { showSetPicker = false }
+            }
+        }
+    }
+
+    /// Pedal picked a song: show it and wait for a second press.
+    private func cueBanner(_ cued: Song) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "forward.fill").foregroundStyle(.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("เตรียมเปิด: \(cued.title)").font(.headline).lineLimit(1)
+                Text("เหยียบขวาอีกครั้งเพื่อเปิด · เหยียบซ้ายเพื่อยกเลิก")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+            Button("ยกเลิก") { self.cued = nil }
+                .buttonStyle(.bordered)
+            Button("เปิด") { go(to: cued) }
+                .buttonStyle(.borderedProminent)
+                .tint(.orange)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color.orange.opacity(0.12))
     }
 
     private func infoChip(_ title: String, _ value: String) -> some View {
@@ -229,6 +305,7 @@ struct PerformanceView: View {
     @discardableResult
     private func go(to song: Song?) -> Bool {
         guard let song else { return false }
+        cued = nil
         if playing {
             midi.stop()
             playing = false
