@@ -96,10 +96,9 @@ struct NUXControlView: View {
                 ctrlButton
             }
             Picker("โหมด Loop", selection: Binding(
-                get: { 0 }, set: { midi.nux(NuxCommands.loopMode, $0, $0 == 1 ? "SYNC mode" : "SPLIT mode") })) {
-                Text("เลือกโหมด").tag(0)
-                Text("SYNC").tag(1)
-                Text("SPLIT").tag(2)
+                get: { midi.nuxSplitMode }, set: { midi.nuxSetLoopMode(split: $0) })) {
+                Text("SYNC (เล่นพร้อมกัน)").tag(false)
+                Text("SPLIT (ทีละ track)").tag(true)
             }
             .pickerStyle(.segmented)
         }
@@ -122,18 +121,25 @@ struct NUXControlView: View {
         }
     }
 
-    /// Track light: green = playing, red = recording, grey = stopped. Tap to correct.
+    /// Track light: green = playing, red = recording, blinking = queued, grey = stopped.
+    /// Tap to correct it when the pedal was used directly.
     private func trackLight(_ track: Int) -> some View {
         let state = midi.nuxTrackState[track - 1]
         let (text, color): (String, Color) = switch state {
         case .playing: ("เล่นอยู่", .green)
         case .recording: ("กำลังอัด", .red)
+        case .queued: ("รอคิว", .green)
         case .stopped: ("หยุด", .secondary)
         }
         return Button { midi.nuxToggleTrackLight(track) } label: {
-            Label(text, systemImage: state == .stopped ? "circle" : "circle.fill")
-                .font(.subheadline.bold())
-                .foregroundStyle(color)
+            TimelineView(.periodic(from: .now, by: 0.4)) { context in
+                let blinkOff = state == .queued
+                    && Int(context.date.timeIntervalSinceReferenceDate / 0.4) % 2 == 0
+                Label(text, systemImage: state == .stopped ? "circle" : "circle.fill")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(color)
+                    .opacity(blinkOff ? 0.2 : 1)
+            }
         }
         .buttonStyle(.plain)
     }

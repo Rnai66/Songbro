@@ -371,44 +371,127 @@ final class StageMIDI {
         if let m = nuxCurrentMemory { nuxCurrentMemory = min(max(m + delta, 1), 99) }
     }
 
-    enum TrackState { case stopped, playing, recording }
+    enum TrackState { case stopped, playing, recording, queued }
 
     /// What the app believes each looper track is doing (index 0 = Track 1).
     /// The NUX never reports back, so this follows the buttons pressed here and
     /// can be corrected by tapping the track's light.
     private(set) var nuxTrackState: [TrackState] = [.stopped, .stopped]
 
+    /// SPLIT (default): one track at a time — pressing the other track's Play
+    /// queues it until the current loop ends, then the first one stops.
+    /// SYNC: both tracks play together.
+    var nuxSplitMode = UserDefaults.standard.object(forKey: "nux.splitMode") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(nuxSplitMode, forKey: "nux.splitMode") }
+    }
+
+    func nuxSetLoopMode(split: Bool) {
+        nuxSplitMode = split
+        nux(NuxCommands.loopMode, split ? 2 : 1, split ? "SPLIT mode" : "SYNC mode")
+    }
+
+    /// Loop timing measured from the buttons: Rec → Play gives the loop length,
+    /// and the moment it starts playing gives where each loop ends.
+    private var recordStart: [Date?] = [nil, nil]
+    private var loopLength: [TimeInterval?] = [nil, nil]
+    private var playStart: [Date?] = [nil, nil]
+    private var queuedSwitch: Task<Void, Never>?
+
     func nuxTrack(_ track: Int, _ action: NuxCommands.TrackAction) {
         nux(track == 1 ? NuxCommands.track1 : NuxCommands.track2, action.rawValue, "Track \(track): \(action.title)")
-        let i = track - 1
+        let i = track - 1, other = 1 - i
         switch action {
-        case .playStop: nuxTrackState[i] = nuxTrackState[i] == .playing ? .stopped : .playing
-        case .record: nuxTrackState[i] = .recording
-        case .dub: nuxTrackState[i] = .recording
-        case .clear: nuxTrackState[i] = .stopped
+        case .record:
+            nuxTrackState[i] = .recording
+            recordStart[i] = .now
+            loopLength[i] = nil
+        case .dub:
+            if nuxTrackState[i] == .playing { nuxTrackState[i] = .recording }
+        case .playStop:
+            switch nuxTrackState[i] {
+            case .recording:
+                // Ends the recording (or overdub) and plays the loop.
+                if let start = recordStart[i] {
+                    loopLength[i] = Date.now.timeIntervalSince(start)
+                    playStart[i] = .now
+                }
+                recordStart[i] = nil
+                nuxTrackState[i] = .playing
+            case .playing:
+                nuxTrackState[i] = .stopped
+            case .queued:
+                cancelQueue()
+                nuxTrackState[i] = .stopped
+            case .stopped:
+                if nuxSplitMode, nuxTrackState[other] == .playing {
+                    queue(i, after: other)
+                } else {
+                    nuxTrackState[i] = .playing
+                    playStart[i] = .now
+                }
+            }
+        case .clear:
+            if nuxTrackState[i] == .queued { cancelQueue() }
+            nuxTrackState[i] = .stopped
+            loopLength[i] = nil
+            recordStart[i] = nil
         case .undo, .redo: break
         }
+    }
+
+    /// SPLIT: track `i` waits (blinking) until `current` reaches the end of its loop.
+    private func queue(_ i: Int, after current: Int) {
+        cancelQueue()
+        nuxTrackState[i] = .queued
+        var wait: TimeInterval = 0
+        if let length = loopLength[current], length > 0.2, let start = playStart[current] {
+            let played = Date.now.timeIntervalSince(start).truncatingRemainder(dividingBy: length)
+            wait = length - played
+        }
+        queuedSwitch = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(wait))
+            guard let self, !Task.isCancelled, self.nuxTrackState[i] == .queued else { return }
+            self.nuxTrackState[current] = .stopped
+            self.nuxTrackState[i] = .playing
+            self.playStart[i] = .now
+        }
+    }
+
+    private func cancelQueue() {
+        queuedSwitch?.cancel()
+        queuedSwitch = nil
     }
 
     /// Tap on a track light: playing ↔ stopped, no MIDI sent.
     func nuxToggleTrackLight(_ track: Int) {
         let i = track - 1
+        if nuxTrackState[i] == .queued { cancelQueue() }
         nuxTrackState[i] = nuxTrackState[i] == .stopped ? .playing : .stopped
+        if nuxTrackState[i] == .playing { playStart[i] = .now }
     }
 
-    /// CTRL tap: stop everything that's playing. Stopping the drum stops both
-    /// tracks (they follow it); otherwise each playing track gets Play/Stop.
-    /// Everything here is a toggle, so only what the app knows is playing is sent.
+    /// CTRL tap: stop what's playing — never start anything. All NUX stop
+    /// commands are toggles, so only tracks the app's lights show as playing
+    /// (or recording) get Play/Stop; a recording track needs it twice (end the
+    /// take, then stop). The drum is left alone: its toggle would start it if
+    /// it was already stopped on the pedal.
     func nuxStopAll() {
-        if nuxDrumRunning {
-            send(controlChange: NuxCommands.drumOnOff, value: 1, to: .nuxDualLoop)
-            nuxDrumRunning = false
-        } else {
-            for track in 1...2 where nuxTrackState[track - 1] != .stopped {
-                send(controlChange: track == 1 ? NuxCommands.track1 : NuxCommands.track2,
-                     value: UInt8(NuxCommands.TrackAction.playStop.rawValue), to: .nuxDualLoop)
+        cancelQueue()
+        let cc = [NuxCommands.track1, NuxCommands.track2]
+        let playStop = UInt8(NuxCommands.TrackAction.playStop.rawValue)
+        for i in 0..<2 {
+            switch nuxTrackState[i] {
+            case .playing:
+                send(controlChange: cc[i], value: playStop, to: .nuxDualLoop)
+            case .recording:
+                if let start = recordStart[i] { loopLength[i] = Date.now.timeIntervalSince(start) }
+                send(controlChange: cc[i], value: playStop, to: .nuxDualLoop)
+                send(controlChange: cc[i], value: playStop, to: .nuxDualLoop)
+            case .stopped, .queued:
+                break
             }
         }
+        recordStart = [nil, nil]
         nuxTrackState = [.stopped, .stopped]
         note("CTRL: หยุดทั้งหมด", device: .nuxDualLoop)
     }
@@ -418,7 +501,10 @@ final class StageMIDI {
         for cc in [NuxCommands.track1, NuxCommands.track2] {
             send(controlChange: cc, value: UInt8(NuxCommands.TrackAction.clear.rawValue), to: .nuxDualLoop)
         }
+        cancelQueue()
         nuxTrackState = [.stopped, .stopped]
+        loopLength = [nil, nil]
+        recordStart = [nil, nil]
         note("CTRL ค้าง: เคลียร์ Track 1 และ 2", device: .nuxDualLoop)
     }
 
