@@ -37,6 +37,7 @@ struct QuickBeatSettings: View {
                 if midi.active == .nuxDualLoop {
                     nuxMemorySection
                 } else {
+                drumSetSection
                 if !frequentBeats.isEmpty {
                     Section("ใช้บ่อย") {
                         ForEach(frequentBeats, id: \.self) { pick in
@@ -105,6 +106,35 @@ struct QuickBeatSettings: View {
             }
         }
         .navigationTitle(folder.name)
+    }
+
+    /// BeatBuddy kit sound for this song; sent right away and every time the song opens.
+    private var drumSetSection: some View {
+        Section {
+            ForEach(catalog.drumSets ?? []) { kit in
+                Button {
+                    save { $0.drumSet = kit.number }
+                    midi.selectDrumSet(kit.number)
+                } label: {
+                    HStack {
+                        Text("\(kit.number). \(kit.name)").foregroundStyle(.primary)
+                        Spacer()
+                        if kit.number == song.drumSet {
+                            Image(systemName: "checkmark").foregroundStyle(.tint)
+                        }
+                    }
+                }
+            }
+            if song.drumSet != nil {
+                Button("ไม่เปลี่ยน (ใช้เสียงกลองที่ตั้งไว้ในเครื่อง)", systemImage: "xmark.circle", role: .destructive) {
+                    save { $0.drumSet = nil }
+                }
+            }
+        } header: {
+            Text("Drum Set · เสียงกลอง")
+        } footer: {
+            Text("เลือกแล้ว BeatBuddy เปลี่ยนเสียงกลองทันที และจะส่งให้ทุกครั้งที่เปิดเพลงนี้")
+        }
     }
 
     /// NUX Dual Loop Stereo: one phrase memory (01–99) per song.

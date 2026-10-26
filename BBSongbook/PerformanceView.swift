@@ -114,25 +114,43 @@ struct PerformanceView: View {
 
     /// Tap any chip to change key / BPM / rhythm right here (saved and sent to the active device).
     private var header: some View {
-        HStack(spacing: 10) {
-            Button { showQuickSettings = true } label: {
-                HStack(spacing: 10) {
-                    infoChip("คีย์", song.key.isEmpty ? "-" : ChordPro.transposeChord(song.key, by: transpose))
-                    infoChip("BPM", "\(song.estimated == true ? "≈" : "")\(song.bpm)")
-                    infoChip(midi.active == .nuxDualLoop ? "NUX ▾" : "จังหวะ ▾",
-                             song.rhythmLabel(for: midi.active) ?? "แตะเพื่อเลือก")
+        // One row when it fits (landscape); otherwise the next-song button
+        // drops to a second row so the chips keep their names readable.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) {
+                chipsButton
+                Spacer(minLength: 0)
+                setNavigation
+            }
+            VStack(alignment: .leading, spacing: 8) {
+                chipsButton
+                HStack {
+                    Spacer(minLength: 0)
+                    setNavigation
                 }
             }
-            .buttonStyle(.plain)
-            .popover(isPresented: $showQuickSettings, arrowEdge: .top) {
-                QuickBeatSettings(song: song)
-                    .frame(minWidth: 400, idealWidth: 440, minHeight: 720)
-            }
-            Spacer(minLength: 0)
-            setNavigation
         }
         .padding(.horizontal)
         .padding(.vertical, 10)
+    }
+
+    private var chipsButton: some View {
+        Button { showQuickSettings = true } label: {
+            HStack(spacing: 10) {
+                infoChip("คีย์", song.key.isEmpty ? "-" : ChordPro.transposeChord(song.key, by: transpose))
+                infoChip("BPM", "\(song.estimated == true ? "≈" : "")\(song.bpm)")
+                infoChip(midi.active == .nuxDualLoop ? "NUX ▾" : "จังหวะ ▾",
+                         song.rhythmLabel(for: midi.active) ?? "แตะเพื่อเลือก")
+                if midi.active == .beatBuddy {
+                    infoChip("กลอง ▾", BeatCatalog.bundled.drumSetName(song.drumSet) ?? "ตามเครื่อง")
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showQuickSettings, arrowEdge: .top) {
+            QuickBeatSettings(song: song)
+                .frame(minWidth: 400, idealWidth: 440, minHeight: 720)
+        }
     }
 
     /// Shows what comes next in the set; tapping opens the set list to choose

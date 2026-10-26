@@ -77,6 +77,17 @@ struct DeviceSettingsSections: View {
             Text("ถ้าต่อทั้งสองเครื่องพร้อมกัน ให้เลือกช่อง MIDI ของแต่ละเครื่องแยกกัน คำสั่งจะได้ไม่ไปผิดเครื่อง\nChannel ต้องตรงกับที่ตั้งไว้ในเมนู MIDI ของเครื่องนั้น")
         }
 
+        if midi.active == .beatBuddy {
+            Section {
+                Toggle("Drum Set: ค่า 0 = ชุดแรก", isOn: $midi.drumSetZeroBased)
+                Button("ทดสอบ: เลือก Drum Set ชุดแรก", systemImage: "music.note") { midi.selectDrumSet(1) }
+            } header: {
+                Text("Drum Set (CC 116)")
+            } footer: {
+                Text("กดทดสอบแล้วดูจอ BeatBuddy ถ้าได้ชุดที่ 2 แทนชุดแรก ให้เปิดสวิตช์นี้")
+            }
+        }
+
         if midi.active == .nuxDualLoop {
             Section {
                 LabeledContent("เลือก Memory 01–99", value: "CC 11")

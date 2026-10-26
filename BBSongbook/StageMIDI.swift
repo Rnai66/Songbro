@@ -71,6 +71,7 @@ final class StageMIDI {
         // what BeatBuddy sends out after a transition, it doesn't act on it.
         static let transition: UInt8 = 113
         static let drumFill: UInt8 = 112
+        static let drumSet: UInt8 = 116       // value = drum set (see drumSetZeroBased)
         static let pause: UInt8 = 111         // 1 = pause, 0 = continue (toggle values are unreliable)
     }
 
@@ -94,9 +95,16 @@ final class StageMIDI {
 
     private static let settingsKey = "stageMIDISettings"
 
+    /// Forum reports differ on whether CC116 value 0 or 1 picks the first drum set,
+    /// so it's a setting (off = value 1 is the first set).
+    var drumSetZeroBased = false {
+        didSet { save() }
+    }
+
     private struct Saved: Codable {
         var active: StageDevice
         var connections: [StageDevice: DeviceConnection]
+        var drumSetZeroBased: Bool?
     }
 
     init() {
@@ -104,6 +112,7 @@ final class StageMIDI {
             .flatMap { try? JSONDecoder().decode(Saved.self, from: $0) }
         active = saved?.active ?? .beatBuddy
         connections = saved?.connections ?? [:]
+        drumSetZeroBased = saved?.drumSetZeroBased ?? false
 
         MIDIClientCreateWithBlock("SongBro" as CFString, &client) { [weak self] _ in
             DispatchQueue.main.async { self?.refresh() }
@@ -117,7 +126,8 @@ final class StageMIDI {
     }
 
     private func save() {
-        let data = try? JSONEncoder().encode(Saved(active: active, connections: connections))
+        let data = try? JSONEncoder().encode(Saved(active: active, connections: connections,
+                                                          drumSetZeroBased: drumSetZeroBased))
         UserDefaults.standard.set(data, forKey: Self.settingsKey)
     }
 
@@ -157,6 +167,8 @@ final class StageMIDI {
             if let folder = song.beatFolder, let beat = song.beatNumber {
                 selectBeat(folder: folder, beat: beat)
             }
+            // After the beat, so the song's own default kit doesn't override it.
+            if let drumSet = song.drumSet { selectDrumSet(drumSet) }
         case .nuxDualLoop:
             if let memory = song.nuxMemory { selectNuxMemory(memory) }
         }
@@ -170,6 +182,14 @@ final class StageMIDI {
         send(controlChange: BeatBuddyCommands.bankLSB, value: UInt8(f & 0x7F))
         send(programChange: UInt8(clamping: max(beat - 1, 0)))
         note("เลือกจังหวะ โฟลเดอร์ \(folder) จังหวะ \(beat)")
+    }
+
+    /// BeatBuddy: switch the drum kit sound (1-based, as in BBManager).
+    func selectDrumSet(_ number: Int) {
+        guard active == .beatBuddy else { return }
+        let value = drumSetZeroBased ? number - 1 : number
+        send(controlChange: BeatBuddyCommands.drumSet, value: UInt8(clamping: min(max(value, 0), 127)))
+        note("Drum Set \(number) · \(BeatCatalog.bundled.drumSetName(number) ?? "")")
     }
 
     /// NUX: recall phrase memory 01–99.

@@ -1164,5 +1164,51 @@
     }
    ]
   }
+ ],
+ "drumSets": [
+  {
+   "number": 1,
+   "name": "Brushes"
+  },
+  {
+   "number": 2,
+   "name": "Dance"
+  },
+  {
+   "number": 3,
+   "name": "Ethereal"
+  },
+  {
+   "number": 4,
+   "name": "Jazz"
+  },
+  {
+   "number": 5,
+   "name": "Latin"
+  },
+  {
+   "number": 6,
+   "name": "Metal"
+  },
+  {
+   "number": 7,
+   "name": "Percussion"
+  },
+  {
+   "number": 8,
+   "name": "Rock"
+  },
+  {
+   "number": 9,
+   "name": "Voice"
+  },
+  {
+   "number": 10,
+   "name": "CT Premium Drum Set1"
+  },
+  {
+   "number": 11,
+   "name": "CT Premium Drum Set2"
+  }
  ]
 }

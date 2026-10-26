@@ -4,8 +4,9 @@
 Usage:
   python3 tools/make_beats.py "<path to BBManager project>/"
 
-Reads SONGS/config.csv (folder order) and each folder's config.csv
-(beat order) — the same order the BeatBuddy uses on its SD card.
+Reads SONGS/config.csv (folder order), each folder's config.csv (beat order)
+and DRUMSETS/config.csv (drum set order) — the order the BeatBuddy uses on its
+SD card.
 """
 import json
 import pathlib
@@ -45,10 +46,13 @@ def main():
         beats = [{"number": n, "name": beat_name}
                  for _, n, beat_name in read_config(songs_dir / folder_id)]
         folders.append({"number": number, "name": name, "beats": beats})
-    catalog = {"project": project.name.replace(" - Project", ""), "folders": folders}
+    drum_sets = [{"number": n, "name": name} for _, n, name in read_config(project / "DRUMSETS")]
+    catalog = {"project": project.name.replace(" - Project", ""), "folders": folders,
+               "drumSets": drum_sets}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(catalog, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"{len(folders)} folders, {sum(len(f['beats']) for f in folders)} beats -> {OUT}")
+    print(f"{len(folders)} folders, {sum(len(f['beats']) for f in folders)} beats, "
+          f"{len(drum_sets)} drum sets -> {OUT}")
 
 
 if __name__ == "__main__":
