@@ -389,6 +389,18 @@ final class StageMIDI {
         nuxDrumRunning.toggle()
     }
 
+    /// Like the NUX's right-hand CTRL footswitch (set to STOP): MIDI Stop, and
+    /// the drum off if the app last turned it on. The manual has no "stop all"
+    /// CC, so this relies on the NUX honouring MIDI Stop.
+    func nuxStop() {
+        send(realtime: 0xFC, to: .nuxDualLoop)
+        if nuxDrumRunning {
+            send(controlChange: NuxCommands.drumOnOff, value: 1, to: .nuxDualLoop)
+            nuxDrumRunning = false
+        }
+        note("CTRL: Stop", device: .nuxDualLoop)
+    }
+
     func nuxGlobal(_ mode: NuxCommands.GlobalMode, _ label: String) {
         nux(NuxCommands.globalMode, mode.rawValue, label)
     }
@@ -409,8 +421,8 @@ final class StageMIDI {
         sendUMP(0x2000_0000 | (0xC0 | statusChannel(active)) << 16 | UInt32(program & 0x7F) << 8, to: active)
     }
 
-    private func send(realtime status: UInt8) {
-        sendUMP(0x1000_0000 | UInt32(status) << 16, to: active)
+    private func send(realtime status: UInt8, to device: StageDevice? = nil) {
+        sendUMP(0x1000_0000 | UInt32(status) << 16, to: device ?? active)
     }
 
     /// One MIDI 1.0 message as a 32-bit Universal MIDI Packet word, sent to that

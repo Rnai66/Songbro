@@ -18,7 +18,7 @@ struct NUXControlView: View {
     @AppStorage("nux.master") private var master = 100.0
     @AppStorage("nux.brightness") private var brightness = 8.0
 
-    @AppStorage("nux.ctrlAction") private var ctrlAction = CtrlAction.tapTempo.rawValue
+    @AppStorage("nux.ctrlAction.v2") private var ctrlAction = CtrlAction.stop.rawValue
     @AppStorage("nux.showGlobal") private var showGlobal = false
 
     @State private var memoryInput = 1
@@ -112,10 +112,11 @@ struct NUXControlView: View {
     /// is set in the pedal's CTRL SETTING), so the app's CTRL button sends the
     /// function chosen here — pick the same one as on the pedal.
     private var ctrlButton: some View {
-        let action = CtrlAction(rawValue: ctrlAction) ?? .tapTempo
+        let action = CtrlAction(rawValue: ctrlAction) ?? .stop
         return VStack(spacing: 6) {
             Button { action.send(midi) } label: {
-                Label("CTRL", systemImage: "circle.circle")
+                Label(action == .stop ? "CTRL · Stop" : "CTRL",
+                      systemImage: action == .stop ? "stop.fill" : "circle.circle")
             }
             .buttonStyle(.borderedProminent)
             .tint(.orange)
@@ -124,7 +125,7 @@ struct NUXControlView: View {
                     ForEach(CtrlAction.allCases) { Text($0.title).tag($0.rawValue) }
                 }
             } label: {
-                Text(action.title + " ▾").font(.caption).lineLimit(1)
+                Text((action == .stop ? "Stop" : action.title) + " ▾").font(.caption).lineLimit(1)
             }
         }
     }
@@ -286,12 +287,14 @@ struct NUXControlView: View {
     }
 }
 
-/// What the app's CTRL button does — the same choices as the NUX's CTRL SETTING.
+/// What the app's CTRL button does. Default is Stop, like the right-hand CTRL
+/// footswitch on the user's NUX.
 enum CtrlAction: String, CaseIterable, Identifiable {
-    case tapTempo, drumOnOff, track1PlayStop, track2PlayStop, track1Undo, track2Undo, memoryUp, memoryDown
+    case stop, tapTempo, drumOnOff, track1PlayStop, track2PlayStop, track1Undo, track2Undo, memoryUp, memoryDown
     var id: String { rawValue }
     var title: String {
         switch self {
+        case .stop: "Stop (เหมือนสวิตช์ CTRL บนเครื่อง)"
         case .tapTempo: "Tap tempo"
         case .drumOnOff: "กลอง เปิด/ปิด"
         case .track1PlayStop: "Track 1 Play/Stop"
@@ -305,6 +308,7 @@ enum CtrlAction: String, CaseIterable, Identifiable {
 
     func send(_ midi: StageMIDI) {
         switch self {
+        case .stop: midi.nuxStop()
         case .tapTempo: midi.nux(NuxCommands.tapTempo, 1, "CTRL: Tap tempo")
         case .drumOnOff: midi.nuxDrumToggle()
         case .track1PlayStop: midi.nuxTrack(1, .playStop)
