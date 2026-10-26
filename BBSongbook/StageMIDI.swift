@@ -42,12 +42,65 @@ struct DeviceConnection: Codable, Equatable {
 /// NUX NML-3DLS (Dual Loop Stereo) MIDI map, from the "MIDI Control" tables
 /// in the NUX owner's manual. The NUX has no drum fill or part-change command.
 enum NuxCommands {
+    static let memoryStep: UInt8 = 10    // 1 = memory +1, 2 = memory −1
     static let loadMemory: UInt8 = 11    // value 01–99 = memory number
+    static let loopMode: UInt8 = 12      // 1 = SYNC, 2 = SPLIT
+    static let track1: UInt8 = 20        // TrackAction raw value
+    static let track1Level: UInt8 = 23   // 0–127
+    static let track2: UInt8 = 24
+    static let track2Level: UInt8 = 27
     static let drumOnOff: UInt8 = 30     // value 01, toggles the drum
+    static let drumLevel: UInt8 = 33     // 0–127
+    static let tapTempo: UInt8 = 34      // 1 per tap
+    static let timeSignature: UInt8 = 35 // 1 = 4/4, 2 = 3/4
     static let tempoLow: UInt8 = 37      // value 30–100 = 30–100 BPM
     static let tempoMid: UInt8 = 38      // value 01–100 = 101–200 BPM
     static let tempoHigh: UInt8 = 39     // value 01–50 = 201–250 BPM
+    static let tempoUp: UInt8 = 40       // value = steps
+    static let tempoDown: UInt8 = 41
+    static let octaveOnOff: UInt8 = 50, octaveLevel: UInt8 = 51   // level 0–100
+    static let boostOnOff: UInt8 = 52, boostLevel: UInt8 = 53
+    static let cabOnOff: UInt8 = 54
+    static let reverbOnOff: UInt8 = 55, reverbLevel: UInt8 = 56   // reverb is for the drum only
+    static let brightness: UInt8 = 62    // 0–10
+    static let globalMode: UInt8 = 63    // see GlobalMode
+    static let headphones: UInt8 = 66    // 0–127
+    static let master: UInt8 = 69        // 0–127
     static let tempoRange = 30...250
+
+    /// CC20 / CC24 values for each looper track.
+    enum TrackAction: Int, CaseIterable, Identifiable {
+        case playStop = 1, record, dub, undo, redo, clear
+        var id: Int { rawValue }
+        var title: String {
+            switch self {
+            case .playStop: "Play"
+            case .record: "Rec"
+            case .dub: "Dub"
+            case .undo: "Undo"
+            case .redo: "Redo"
+            case .clear: "Clear"
+            }
+        }
+        var icon: String {
+            switch self {
+            case .playStop: "playpause.fill"
+            case .record: "record.circle"
+            case .dub: "plus.circle"
+            case .undo: "arrow.uturn.backward"
+            case .redo: "arrow.uturn.forward"
+            case .clear: "trash"
+            }
+        }
+    }
+
+    /// CC63 values from the "Global Setting" table.
+    enum GlobalMode: Int {
+        case recInstant = 1, recDetecting, recPreBeat
+        case dubRecPlayDub, dubRecDubPlay
+        case stopNormal, stopOneShot, stopLoopEnd, stopFadeOut
+        case pathMicInstMono, pathStereo, pathSplit
+    }
 }
 
 /// Sends rhythm-machine commands over CoreMIDI (USB MIDI interface or Bluetooth MIDI)
@@ -297,32 +350,77 @@ final class StageMIDI {
         note(paused ? "Pause" : "ต่อ (Unpause)")
     }
 
+    // MARK: - NUX control panel (always sent to the NUX's own MIDI output)
+
+    /// Memory the NUX was last told to load (it doesn't report back over MIDI).
+    private(set) var nuxCurrentMemory: Int?
+
+    func nux(_ cc: UInt8, _ value: Int, _ label: String) {
+        send(controlChange: cc, value: UInt8(clamping: min(max(value, 0), 127)), to: .nuxDualLoop)
+        note(label, device: .nuxDualLoop)
+    }
+
+    func nuxLoadMemory(_ memory: Int) {
+        let m = min(max(memory, 1), 99)
+        nuxCurrentMemory = m
+        nux(NuxCommands.loadMemory, m, String(format: "Memory %02d", m))
+    }
+
+    func nuxStepMemory(_ delta: Int) {
+        nux(NuxCommands.memoryStep, delta > 0 ? 1 : 2, delta > 0 ? "Memory +1" : "Memory −1")
+        if let m = nuxCurrentMemory { nuxCurrentMemory = min(max(m + delta, 1), 99) }
+    }
+
+    func nuxTrack(_ track: Int, _ action: NuxCommands.TrackAction) {
+        nux(track == 1 ? NuxCommands.track1 : NuxCommands.track2, action.rawValue, "Track \(track): \(action.title)")
+    }
+
+    func nuxTempo(_ bpm: Int) {
+        let t = min(max(bpm, NuxCommands.tempoRange.lowerBound), NuxCommands.tempoRange.upperBound)
+        switch t {
+        case ...100: nux(NuxCommands.tempoLow, t, "Tempo \(t)")
+        case ...200: nux(NuxCommands.tempoMid, t - 100, "Tempo \(t)")
+        default: nux(NuxCommands.tempoHigh, t - 200, "Tempo \(t)")
+        }
+    }
+
+    func nuxDrumToggle() {
+        nux(NuxCommands.drumOnOff, 1, "กลอง เปิด/ปิด")
+        nuxDrumRunning.toggle()
+    }
+
+    func nuxGlobal(_ mode: NuxCommands.GlobalMode, _ label: String) {
+        nux(NuxCommands.globalMode, mode.rawValue, label)
+    }
+
     // MARK: - Sending
 
-    private var activeConnection: DeviceConnection { connection(for: active) }
+    private func statusChannel(_ device: StageDevice) -> UInt32 {
+        UInt32(min(max(connection(for: device).channel, 1), 16) - 1)
+    }
 
-    private var statusChannel: UInt32 { UInt32(min(max(activeConnection.channel, 1), 16) - 1) }
-
-    private func send(controlChange cc: UInt8, value: UInt8) {
-        sendUMP(0x2000_0000 | (0xB0 | statusChannel) << 16 | UInt32(cc & 0x7F) << 8 | UInt32(value & 0x7F))
+    private func send(controlChange cc: UInt8, value: UInt8, to device: StageDevice? = nil) {
+        let device = device ?? active
+        sendUMP(0x2000_0000 | (0xB0 | statusChannel(device)) << 16 | UInt32(cc & 0x7F) << 8 | UInt32(value & 0x7F),
+                to: device)
     }
 
     private func send(programChange program: UInt8) {
-        sendUMP(0x2000_0000 | (0xC0 | statusChannel) << 16 | UInt32(program & 0x7F) << 8)
+        sendUMP(0x2000_0000 | (0xC0 | statusChannel(active)) << 16 | UInt32(program & 0x7F) << 8, to: active)
     }
 
     private func send(realtime status: UInt8) {
-        sendUMP(0x1000_0000 | UInt32(status) << 16)
+        sendUMP(0x1000_0000 | UInt32(status) << 16, to: active)
     }
 
-    /// One MIDI 1.0 message as a 32-bit Universal MIDI Packet word, sent to the
-    /// active device's output only.
-    private func sendUMP(_ word: UInt32) {
+    /// One MIDI 1.0 message as a 32-bit Universal MIDI Packet word, sent to that
+    /// device's output only.
+    private func sendUMP(_ word: UInt32, to device: StageDevice) {
         var list = MIDIEventList()
         let packet = MIDIEventListInit(&list, ._1_0)
         var w = word
         _ = MIDIEventListAdd(&list, MemoryLayout<MIDIEventList>.size, packet, 0, 1, &w)
-        let target = activeConnection.destinationID
+        let target = connection(for: device).destinationID
         for i in 0..<MIDIGetNumberOfDestinations() {
             let endpoint = MIDIGetDestination(i)
             var uid: MIDIUniqueID = 0
@@ -333,10 +431,11 @@ final class StageMIDI {
         }
     }
 
-    private func note(_ text: String) {
+    private func note(_ text: String, device: StageDevice? = nil) {
+        let device = device ?? active
         let time = Date.now.formatted(date: .omitted, time: .standard)
-        let target = isConnected ? "" : " (ยังไม่ได้ต่อ MIDI)"
-        log.insert("\(time)  [\(active.shortName)] \(text)\(target)", at: 0)
+        let target = isConnected(device) ? "" : " (ยังไม่ได้ต่อ MIDI)"
+        log.insert("\(time)  [\(device.shortName)] \(text)\(target)", at: 0)
         if log.count > 50 { log.removeLast() }
     }
 }

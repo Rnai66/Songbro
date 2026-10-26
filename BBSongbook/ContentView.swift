@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var search = ""
     @State private var editing: Song?
     @State private var showMIDI = false
+    @State private var showNuxPanel = false
 
     private var songs: [Song] {
         store.songs(in: category?.isEmpty == false ? category : nil)
@@ -62,6 +63,13 @@ struct ContentView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("หน้าแรก", systemImage: "house", action: onHome)
+                }
+                if midi.active == .nuxDualLoop {
+                    ToolbarItem {
+                        Button("NUX", systemImage: "slider.horizontal.below.square.filled.and.square") {
+                            showNuxPanel = true
+                        }
+                    }
                 }
                 ToolbarItem {
                     Button { showMIDI = true } label: {
@@ -127,6 +135,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showMIDI) {
             MIDISettingsView()
+        }
+        .sheet(isPresented: $showNuxPanel) {
+            NUXControlView().pageSizedSheet()
         }
         // Pick up sheets added in the Files app while we were in the background.
         .onChange(of: scenePhase, initial: true) { _, phase in

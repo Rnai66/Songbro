@@ -25,6 +25,7 @@ struct MIDISettingsView: View {
 struct DeviceSettingsSections: View {
     @Environment(StageMIDI.self) private var midi
     @State private var showBluetooth = false
+    @State private var showNuxPanel = false
 
     var body: some View {
         @Bindable var midi = midi
@@ -90,14 +91,17 @@ struct DeviceSettingsSections: View {
 
         if midi.active == .nuxDualLoop {
             Section {
-                LabeledContent("เลือก Memory 01–99", value: "CC 11")
-                LabeledContent("Tempo 30–250 BPM", value: "CC 37 / 38 / 39")
-                LabeledContent("กลอง เปิด/ปิด", value: "CC 30")
+                Button {
+                    showNuxPanel = true
+                } label: {
+                    Label("เปิดหน้าควบคุม NUX", systemImage: "slider.horizontal.below.square.filled.and.square")
+                        .font(.headline)
+                }
                 Button("สลับกลอง เปิด/ปิด", systemImage: "arrow.left.arrow.right") { midi.toggleNuxDrum() }
             } header: {
                 Text("คำสั่ง MIDI ของ NUX (จากคู่มือ)")
             } footer: {
-                Text("ตั้งค่าตามตาราง MIDI Control ในคู่มือ NML-3DLS แล้ว ไม่ต้องใส่เอง · NUX ไม่มีคำสั่ง Fill และเปลี่ยนท่อน · กลองของ NUX เป็นปุ่มสลับ ถ้าเหยียบที่เครื่องเองแล้วแอปกับเครื่องไม่ตรงกัน กด \"สลับกลอง\" หนึ่งครั้ง")
+                Text("หน้าควบคุม NUX มีทุกคำสั่งในตาราง MIDI Control ของคู่มือ NML-3DLS: Memory, Track 1/2 (Rec/Play/Dub/Undo/Redo/Clear), กลอง, Tempo, Effects และ Global Setting · กลองของ NUX เป็นปุ่มสลับ ถ้าเหยียบที่เครื่องเองแล้วไม่ตรงกับแอป กด \"สลับกลอง\" หนึ่งครั้ง")
             }
         }
 
@@ -122,6 +126,9 @@ struct DeviceSettingsSections: View {
             ForEach(Array(midi.log.enumerated()), id: \.offset) { _, line in
                 Text(line).font(.caption.monospaced())
             }
+        }
+        .sheet(isPresented: $showNuxPanel) {
+            NUXControlView().pageSizedSheet()
         }
         .sheet(isPresented: $showBluetooth, onDismiss: { midi.refresh() }) {
             NavigationStack {
