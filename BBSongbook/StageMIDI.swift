@@ -401,6 +401,17 @@ final class StageMIDI {
         note("CTRL: Stop", device: .nuxDualLoop)
     }
 
+    /// Diagnostics: which single message really stops the NUX, whatever its state.
+    func nuxTestMidiStopOnly() {
+        send(realtime: 0xFC, to: .nuxDualLoop)
+        note("ทดสอบ: MIDI Stop อย่างเดียว", device: .nuxDualLoop)
+    }
+
+    func nuxTestDrumValueZero() {
+        send(controlChange: NuxCommands.drumOnOff, value: 0, to: .nuxDualLoop)
+        note("ทดสอบ: CC30 ค่า 0", device: .nuxDualLoop)
+    }
+
     func nuxGlobal(_ mode: NuxCommands.GlobalMode, _ label: String) {
         nux(NuxCommands.globalMode, mode.rawValue, label)
     }
