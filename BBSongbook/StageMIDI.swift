@@ -66,7 +66,7 @@ final class StageMIDI {
         static let bankLSB: UInt8 = 32
         static let tempoMSB: UInt8 = 106
         static let tempoLSB: UInt8 = 107
-        static let transition: UInt8 = 102   // value = part number, 127 = next part
+        static let transition: UInt8 = 102   // 127 = start (pedal held), 0 = release → next part
         static let drumFill: UInt8 = 112
         static let pause: UInt8 = 111         // 0 unpause, 1 pause, 2 toggle
     }
@@ -239,10 +239,26 @@ final class StageMIDI {
         note("Fill")
     }
 
-    func nextPart() {
+    /// Like holding the BeatBuddy pedal down: the transition fill keeps
+    /// looping in the current beat until `endTransition()`.
+    func beginTransition() {
         guard supportsFillAndParts else { return note("NUX ไม่มีคำสั่งเปลี่ยนท่อน") }
         send(controlChange: BeatBuddyCommands.transition, value: 127)
-        note("เปลี่ยนท่อน")
+        note("Transition: เริ่ม (ค้างไว้)")
+    }
+
+    /// Like releasing the pedal: BeatBuddy finishes the transition and moves
+    /// to the next part. Without this it stays on "Transition".
+    func endTransition() {
+        guard supportsFillAndParts else { return }
+        send(controlChange: BeatBuddyCommands.transition, value: 0)
+        note("Transition: ปล่อย → ท่อนถัดไป")
+    }
+
+    /// A quick tap: start and release straight away.
+    func nextPart() {
+        beginTransition()
+        endTransition()
     }
 
     func togglePause() {

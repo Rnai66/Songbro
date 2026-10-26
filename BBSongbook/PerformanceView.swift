@@ -26,6 +26,8 @@ struct PerformanceView: View {
     /// Song picked with the pedal but not opened yet — a second press opens it,
     /// so one stray tap never changes song mid-performance.
     @State private var cued: Song?
+    /// Transition button / Return key is being held down.
+    @State private var holdingTransition = false
     @FocusState private var focused: Bool
 
     private var setIndex: Int? { setSongs.firstIndex { $0.id == song.id } }
@@ -86,11 +88,20 @@ struct PerformanceView: View {
             return .handled
         }
         .onKeyPress(.space) { togglePlay(); return .handled }
+        // Return/Enter works like the BeatBuddy pedal: hold = transition fill
+        // loops in the same beat, release = go to the next part.
+        .onKeyPress(.return, phases: [.down, .up]) { press in
+            press.phase == .down ? holdTransition() : releaseTransition()
+            return .handled
+        }
         .onAppear {
             focused = true
             if autoSend { midi.load(song) }
         }
-        .onDisappear { autoScroll = false }
+        .onDisappear {
+            autoScroll = false
+            releaseTransition()
+        }
         .task(id: autoScroll ? lineInterval : 0) {
             guard autoScroll else { return }
             while !Task.isCancelled {
@@ -267,8 +278,11 @@ struct PerformanceView: View {
                     Label("Fill", systemImage: "music.quarternote.3").frame(maxWidth: .infinity)
                 }
                 .disabled(!midi.supportsFillAndParts)
-                Button { midi.nextPart() } label: {
-                    Label("ถัดไป", systemImage: "forward.end.fill").frame(maxWidth: .infinity)
+                HoldButton(pressed: holdingTransition,
+                           onPress: holdTransition,
+                           onRelease: releaseTransition) {
+                    Label(holdingTransition ? "ปล่อย = ท่อนถัดไป" : "Transition",
+                          systemImage: "forward.end.fill")
                 }
                 .disabled(!midi.supportsFillAndParts)
                 Button { midi.load(song) } label: {
@@ -300,12 +314,27 @@ struct PerformanceView: View {
         .background(.bar)
     }
 
+    /// Pedal/button down: start the transition and keep it looping.
+    private func holdTransition() {
+        guard !holdingTransition, midi.supportsFillAndParts else { return }
+        holdingTransition = true
+        midi.beginTransition()
+    }
+
+    /// Pedal/button up: BeatBuddy moves on to the next part.
+    private func releaseTransition() {
+        guard holdingTransition else { return }
+        holdingTransition = false
+        midi.endTransition()
+    }
+
     /// Opens another song in the set. The current song is over, so the drums
     /// stop first; the new song sends its own beat/memory and BPM when it opens.
     @discardableResult
     private func go(to song: Song?) -> Bool {
         guard let song else { return false }
         cued = nil
+        releaseTransition()
         if playing {
             midi.stop()
             playing = false
@@ -335,5 +364,33 @@ struct PerformanceView: View {
         }
         let next = (currentLine ?? 0) + delta
         currentLine = min(max(next, 0), max(lines.count - 1, 0))
+    }
+}
+
+/// A button that reports press and release separately, like a footswitch,
+/// styled to match the bordered buttons beside it.
+private struct HoldButton<Label: View>: View {
+    var pressed: Bool
+    var onPress: () -> Void
+    var onRelease: () -> Void
+    @ViewBuilder var label: Label
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
+        label
+            .lineLimit(1)
+            .font(.body.weight(.medium))
+            .foregroundStyle(isEnabled ? Color.accentColor : Color.secondary)
+            .frame(maxWidth: .infinity, minHeight: 50)
+            .background(pressed ? Color.orange.opacity(0.35) : Color.secondary.opacity(0.15),
+                        in: Capsule())
+            .contentShape(Capsule())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in if isEnabled && !pressed { onPress() } }
+                    .onEnded { _ in onRelease() }
+            )
+            .accessibilityAddTraits(.isButton)
     }
 }
