@@ -94,6 +94,8 @@ struct DeviceSettingsSections: View {
             HStack {
                 Button("Start") { midi.start() }
                 Button("Stop") { midi.stop() }
+                Button(midi.paused ? "ต่อ" : "Pause") { midi.togglePause() }
+                    .disabled(!midi.supportsFillAndParts)
                 Button("Fill") { midi.fill() }
                     .disabled(!midi.supportsFillAndParts)
                 Button("ท่อนถัดไป") { midi.nextPart() }

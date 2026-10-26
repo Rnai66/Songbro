@@ -285,9 +285,13 @@ struct PerformanceView: View {
                           systemImage: "forward.end.fill")
                 }
                 .disabled(!midi.supportsFillAndParts)
-                Button { midi.load(song) } label: {
-                    Label("ส่ง", systemImage: "paperplane.fill").frame(maxWidth: .infinity)
+                Button { midi.togglePause() } label: {
+                    Label(midi.paused ? "ต่อ" : "Pause",
+                          systemImage: midi.paused ? "playpause.fill" : "pause.fill")
+                        .frame(maxWidth: .infinity)
                 }
+                .tint(midi.paused ? .orange : nil)
+                .disabled(!midi.supportsFillAndParts || !playing)
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
@@ -296,6 +300,7 @@ struct PerformanceView: View {
             HStack(spacing: 12) {
                 Toggle(isOn: $autoScroll) { Label("เลื่อนตามจังหวะ", systemImage: "arrow.down.circle") }
                     .toggleStyle(.button)
+                Button("ส่งจังหวะ", systemImage: "paperplane") { midi.load(song) }
                 Spacer(minLength: 0)
                 Text(song.filePath == nil ? "\(beatsPerLine) จังหวะ/บรรทัด" : "เลื่อนทุก \(beatsPerLine) จังหวะ")
                     .monospacedDigit()

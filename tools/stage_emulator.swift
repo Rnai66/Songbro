@@ -110,7 +110,7 @@ final class BeatBuddyState {
                 log("BeatBuddy", "BPM \(metronome.bpm)")
             case 113: log("BeatBuddy", d2 == 0 ? "ปล่อย Transition → ท่อนถัดไป" : "Transition เริ่ม (ค้างไว้)")
             case 112: log("BeatBuddy", "Fill")
-            case 111: log("BeatBuddy", "Pause/ต่อ")
+            case 111: log("BeatBuddy", d2 == 0 ? "ต่อ (Unpause)" : "Pause")
             default: log("BeatBuddy", "CC \(d1) = \(d2) (ไม่รู้จัก)")
             }
         case 0xC0:

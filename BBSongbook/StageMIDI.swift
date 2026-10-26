@@ -71,7 +71,7 @@ final class StageMIDI {
         // what BeatBuddy sends out after a transition, it doesn't act on it.
         static let transition: UInt8 = 113
         static let drumFill: UInt8 = 112
-        static let pause: UInt8 = 111         // 0 unpause, 1 pause, 2 toggle
+        static let pause: UInt8 = 111         // 1 = pause, 0 = continue (toggle values are unreliable)
     }
 
     struct Destination: Identifiable, Hashable {
@@ -202,6 +202,7 @@ final class StageMIDI {
     private var nuxDrumRunning = false
 
     func start() {
+        paused = false
         switch active {
         case .beatBuddy:
             send(realtime: 0xFA)
@@ -214,6 +215,7 @@ final class StageMIDI {
     }
 
     func stop() {
+        paused = false
         switch active {
         case .beatBuddy:
             send(realtime: 0xFC)
@@ -264,10 +266,15 @@ final class StageMIDI {
         endTransition()
     }
 
+    /// BeatBuddy is paused (we track it, because its toggle value is unreliable).
+    private(set) var paused = false
+
+    /// Pause / continue the song in place, without ending it like Stop does.
     func togglePause() {
-        guard active == .beatBuddy else { return }
-        send(controlChange: BeatBuddyCommands.pause, value: 2)
-        note("Pause/ต่อ")
+        guard supportsFillAndParts else { return note("NUX ไม่มีคำสั่ง Pause") }
+        paused.toggle()
+        send(controlChange: BeatBuddyCommands.pause, value: paused ? 1 : 0)
+        note(paused ? "Pause" : "ต่อ (Unpause)")
     }
 
     // MARK: - Sending
