@@ -50,7 +50,22 @@ final class SongStore {
                 updated.append(Song(title: file.title, category: file.category, filePath: file.path))
             }
         }
+        for i in updated.indices {
+            Self.applyKnownBeat(to: &updated[i])
+        }
         if updated != songs { songs = updated }
+    }
+
+    /// Songs in the user's beat tables get that beat and BPM. Only songs with no
+    /// beat yet, or with an unchecked estimate (≈), are touched — never a song
+    /// the user has set or edited.
+    private static func applyKnownBeat(to song: inout Song) {
+        guard song.beatFolder == nil || song.estimated == true,
+              let known = KnownBeats.bundled.lookup(song.title) else { return }
+        song.beatFolder = known.folder
+        song.beatNumber = known.beat
+        if let bpm = known.bpm { song.bpm = bpm }
+        song.estimated = nil
     }
 
     func upsert(_ song: Song) {
