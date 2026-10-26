@@ -18,6 +18,9 @@ struct NUXControlView: View {
     @AppStorage("nux.master") private var master = 100.0
     @AppStorage("nux.brightness") private var brightness = 8.0
 
+    @AppStorage("nux.ctrlAction") private var ctrlAction = CtrlAction.tapTempo.rawValue
+    @AppStorage("nux.showGlobal") private var showGlobal = false
+
     @State private var memoryInput = 1
     @State private var clearTrack: Int?
 
@@ -93,6 +96,7 @@ struct NUXControlView: View {
                 }
                 .buttonStyle(.bordered)
                 Spacer(minLength: 0)
+                ctrlButton
             }
             Picker("โหมด Loop", selection: Binding(
                 get: { 0 }, set: { midi.nux(NuxCommands.loopMode, $0, $0 == 1 ? "SYNC mode" : "SPLIT mode") })) {
@@ -101,6 +105,27 @@ struct NUXControlView: View {
                 Text("SPLIT").tag(2)
             }
             .pickerStyle(.segmented)
+        }
+    }
+
+    /// The NUX's CTRL footswitch has no MIDI command of its own (it does whatever
+    /// is set in the pedal's CTRL SETTING), so the app's CTRL button sends the
+    /// function chosen here — pick the same one as on the pedal.
+    private var ctrlButton: some View {
+        let action = CtrlAction(rawValue: ctrlAction) ?? .tapTempo
+        return VStack(spacing: 6) {
+            Button { action.send(midi) } label: {
+                Label("CTRL", systemImage: "circle.circle")
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.orange)
+            Menu {
+                Picker("ปุ่ม CTRL ทำอะไร", selection: $ctrlAction) {
+                    ForEach(CtrlAction.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+            } label: {
+                Text(action.title + " ▾").font(.caption).lineLimit(1)
+            }
         }
     }
 
@@ -174,7 +199,8 @@ struct NUXControlView: View {
     }
 
     private var settingsCard: some View {
-        card("Global Setting", icon: "gearshape") {
+        DisclosureGroup(isExpanded: $showGlobal) {
+            VStack(alignment: .leading, spacing: 12) {
             modeMenu("REC mode", [("Instant", .recInstant), ("Detecting", .recDetecting), ("Pre-beat", .recPreBeat)])
             modeMenu("DUB mode", [("Rec-Play-Dub", .dubRecPlayDub), ("Rec-Dub-Play", .dubRecDubPlay)])
             modeMenu("STOP mode", [("Normal", .stopNormal), ("One shot", .stopOneShot),
@@ -184,7 +210,13 @@ struct NUXControlView: View {
             levelSlider("Master", value: $master, range: 0...127) { midi.nux(NuxCommands.master, $0, "Master \($0)") }
             levelSlider("Headphones", value: $headphones, range: 0...127) { midi.nux(NuxCommands.headphones, $0, "Headphones \($0)") }
             levelSlider("ความสว่างจอ", value: $brightness, range: 0...10) { midi.nux(NuxCommands.brightness, $0, "Brightness \($0)") }
+            }
+            .padding(.top, 12)
+        } label: {
+            Label("Global Setting", systemImage: "gearshape").font(.headline)
         }
+        .padding()
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var logCard: some View {
@@ -251,5 +283,36 @@ struct NUXControlView: View {
     private func setTempo(_ value: Double) {
         tempo = min(max(value, 30), 250)
         midi.nuxTempo(Int(tempo))
+    }
+}
+
+/// What the app's CTRL button does — the same choices as the NUX's CTRL SETTING.
+enum CtrlAction: String, CaseIterable, Identifiable {
+    case tapTempo, drumOnOff, track1PlayStop, track2PlayStop, track1Undo, track2Undo, memoryUp, memoryDown
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .tapTempo: "Tap tempo"
+        case .drumOnOff: "กลอง เปิด/ปิด"
+        case .track1PlayStop: "Track 1 Play/Stop"
+        case .track2PlayStop: "Track 2 Play/Stop"
+        case .track1Undo: "Track 1 Undo"
+        case .track2Undo: "Track 2 Undo"
+        case .memoryUp: "Memory +1"
+        case .memoryDown: "Memory −1"
+        }
+    }
+
+    func send(_ midi: StageMIDI) {
+        switch self {
+        case .tapTempo: midi.nux(NuxCommands.tapTempo, 1, "CTRL: Tap tempo")
+        case .drumOnOff: midi.nuxDrumToggle()
+        case .track1PlayStop: midi.nuxTrack(1, .playStop)
+        case .track2PlayStop: midi.nuxTrack(2, .playStop)
+        case .track1Undo: midi.nuxTrack(1, .undo)
+        case .track2Undo: midi.nuxTrack(2, .undo)
+        case .memoryUp: midi.nuxStepMemory(1)
+        case .memoryDown: midi.nuxStepMemory(-1)
+        }
     }
 }
