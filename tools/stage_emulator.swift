@@ -108,7 +108,7 @@ final class BeatBuddyState {
             case 107:
                 metronome.bpm = tempoMSB << 7 | Int(d2)
                 log("BeatBuddy", "BPM \(metronome.bpm)")
-            case 102: log("BeatBuddy", d2 == 0 ? "ปล่อย Transition → ท่อนถัดไป" : "Transition เริ่ม (ค้างไว้)")
+            case 113: log("BeatBuddy", d2 == 0 ? "ปล่อย Transition → ท่อนถัดไป" : "Transition เริ่ม (ค้างไว้)")
             case 112: log("BeatBuddy", "Fill")
             case 111: log("BeatBuddy", "Pause/ต่อ")
             default: log("BeatBuddy", "CC \(d1) = \(d2) (ไม่รู้จัก)")

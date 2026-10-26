@@ -66,7 +66,10 @@ final class StageMIDI {
         static let bankLSB: UInt8 = 32
         static let tempoMSB: UInt8 = 106
         static let tempoLSB: UInt8 = 107
-        static let transition: UInt8 = 102   // 127 = start (pedal held), 0 = release → next part
+        // Starts a transition that loops until the value goes back to 0; the value
+        // picks the part to go to on release (127 = next part). CC102 is only
+        // what BeatBuddy sends out after a transition, it doesn't act on it.
+        static let transition: UInt8 = 113
         static let drumFill: UInt8 = 112
         static let pause: UInt8 = 111         // 0 unpause, 1 pause, 2 toggle
     }
