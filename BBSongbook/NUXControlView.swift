@@ -30,10 +30,8 @@ struct NUXControlView: View {
                 VStack(spacing: 16) {
                     status
                     memoryCard
-                    HStack(alignment: .top, spacing: 16) {
-                        trackCard(1, level: $track1Level, cc: NuxCommands.track1Level)
-                        trackCard(2, level: $track2Level, cc: NuxCommands.track2Level)
-                    }
+                    trackCard(1, level: $track1Level, cc: NuxCommands.track1Level)
+                    trackCard(2, level: $track2Level, cc: NuxCommands.track2Level)
                     drumCard
                     effectsCard
                     settingsCard
@@ -132,20 +130,37 @@ struct NUXControlView: View {
 
     private func trackCard(_ track: Int, level: Binding<Double>, cc: UInt8) -> some View {
         card("Track \(track)", icon: "waveform") {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96))], spacing: 8) {
-                ForEach(NuxCommands.TrackAction.allCases) { action in
+            // Full-width card; the three stage buttons are big footswitch-sized pads.
+            HStack(spacing: 12) {
+                bigTrackButton(track, .playStop, color: .green)
+                bigTrackButton(track, .record, color: .red)
+                bigTrackButton(track, .dub, color: .orange)
+            }
+            HStack(spacing: 8) {
+                ForEach([NuxCommands.TrackAction.undo, .redo, .clear]) { action in
                     Button(role: action == .clear ? .destructive : nil) {
                         if action == .clear { clearTrack = track } else { midi.nuxTrack(track, action) }
                     } label: {
                         Label(action.title, systemImage: action.icon)
-                            .lineLimit(1).minimumScaleFactor(0.8).frame(maxWidth: .infinity)
+                            .lineLimit(1).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
-                    .tint(action == .record ? .red : nil)
                 }
             }
             levelSlider("Level", value: level, range: 0...127) { midi.nux(cc, $0, "Track \(track) level \($0)") }
         }
+    }
+
+    private func bigTrackButton(_ track: Int, _ action: NuxCommands.TrackAction, color: Color) -> some View {
+        Button { midi.nuxTrack(track, action) } label: {
+            VStack(spacing: 8) {
+                Image(systemName: action.icon).font(.system(size: 38, weight: .semibold))
+                Text(action.title).font(.title2.bold())
+            }
+            .frame(maxWidth: .infinity, minHeight: 110)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(color)
     }
 
     private var drumCard: some View {
