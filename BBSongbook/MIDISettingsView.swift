@@ -5,17 +5,21 @@ import SwiftUI
 /// MIDI settings opened from the song list (same content as the home screen).
 struct MIDISettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var showNuxPanel = false
 
     var body: some View {
         NavigationStack {
             Form {
-                DeviceSettingsSections()
+                DeviceSettingsSections(openNuxPanel: { showNuxPanel = true })
             }
             .navigationTitle("อุปกรณ์ MIDI")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 Button("เสร็จ") { dismiss() }
             }
+        }
+        .sheet(isPresented: $showNuxPanel) {
+            NUXControlView().pageSizedSheet()
         }
     }
 }
@@ -25,7 +29,9 @@ struct MIDISettingsView: View {
 struct DeviceSettingsSections: View {
     @Environment(StageMIDI.self) private var midi
     @State private var showBluetooth = false
-    @State private var showNuxPanel = false
+    /// Opens the NUX screen. The sheet itself lives on the screen that hosts
+    /// these sections: attached to a Form row, it closed whenever MIDI state redrew the row.
+    var openNuxPanel: () -> Void = {}
 
     var body: some View {
         @Bindable var midi = midi
@@ -92,7 +98,7 @@ struct DeviceSettingsSections: View {
         if midi.active == .nuxDualLoop {
             Section {
                 Button {
-                    showNuxPanel = true
+                    openNuxPanel()
                 } label: {
                     Label("เปิดหน้าควบคุม NUX", systemImage: "slider.horizontal.below.square.filled.and.square")
                         .font(.headline)
@@ -126,9 +132,6 @@ struct DeviceSettingsSections: View {
             ForEach(Array(midi.log.enumerated()), id: \.offset) { _, line in
                 Text(line).font(.caption.monospaced())
             }
-        }
-        .sheet(isPresented: $showNuxPanel) {
-            NUXControlView().pageSizedSheet()
         }
         .sheet(isPresented: $showBluetooth, onDismiss: { midi.refresh() }) {
             NavigationStack {

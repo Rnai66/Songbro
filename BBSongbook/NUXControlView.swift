@@ -18,7 +18,6 @@ struct NUXControlView: View {
     @AppStorage("nux.master") private var master = 100.0
     @AppStorage("nux.brightness") private var brightness = 8.0
 
-    @AppStorage("nux.ctrlAction.v2") private var ctrlAction = CtrlAction.stop.rawValue
     @AppStorage("nux.showGlobal") private var showGlobal = false
 
     @State private var memoryInput = 1
@@ -106,40 +105,41 @@ struct NUXControlView: View {
         }
     }
 
-    /// The NUX's CTRL footswitch has no MIDI command of its own (it does whatever
-    /// is set in the pedal's CTRL SETTING), so the app's CTRL button sends the
-    /// function chosen here — pick the same one as on the pedal.
+    /// Like the NUX's CTRL footswitch: tap = stop everything, hold = clear both tracks.
     private var ctrlButton: some View {
-        let action = CtrlAction(rawValue: ctrlAction) ?? .stop
-        return VStack(spacing: 6) {
-            // Tap to match the pedal when the drum was started/stopped on the NUX itself.
-            Button {
-                midi.nuxSetDrumState(running: !midi.nuxDrumRunning)
-            } label: {
-                Label(midi.nuxDrumRunning ? "กลอง: เล่นอยู่" : "กลอง: หยุด",
-                      systemImage: midi.nuxDrumRunning ? "circle.fill" : "circle")
-                    .font(.caption.bold())
-                    .foregroundStyle(midi.nuxDrumRunning ? .green : .secondary)
-            }
-            .buttonStyle(.plain)
-            Button { action.send(midi) } label: {
-                Label(action == .stop ? "CTRL · Stop" : "CTRL",
-                      systemImage: action == .stop ? "stop.fill" : "circle.circle")
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
-            Menu {
-                Picker("ปุ่ม CTRL ทำอะไร", selection: $ctrlAction) {
-                    ForEach(CtrlAction.allCases) { Text($0.title).tag($0.rawValue) }
-                }
-            } label: {
-                Text((action == .stop ? "Stop" : action.title) + " ▾").font(.caption).lineLimit(1)
-            }
+        VStack(spacing: 4) {
+            Label("CTRL", systemImage: "stop.fill")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(Color.orange, in: Capsule())
+                .onTapGesture { midi.nuxStopAll() }
+                .onLongPressGesture(minimumDuration: 1.0) { midi.nuxClearAll() }
+                .accessibilityAddTraits(.isButton)
+            Text("แตะ = หยุด · ค้าง = เคลียร์")
+                .font(.caption2).foregroundStyle(.secondary)
         }
     }
 
+    /// Track light: green = playing, red = recording, grey = stopped. Tap to correct.
+    private func trackLight(_ track: Int) -> some View {
+        let state = midi.nuxTrackState[track - 1]
+        let (text, color): (String, Color) = switch state {
+        case .playing: ("เล่นอยู่", .green)
+        case .recording: ("กำลังอัด", .red)
+        case .stopped: ("หยุด", .secondary)
+        }
+        return Button { midi.nuxToggleTrackLight(track) } label: {
+            Label(text, systemImage: state == .stopped ? "circle" : "circle.fill")
+                .font(.subheadline.bold())
+                .foregroundStyle(color)
+        }
+        .buttonStyle(.plain)
+    }
+
     private func trackCard(_ track: Int, level: Binding<Double>, cc: UInt8) -> some View {
-        card("Track \(track)", icon: "waveform") {
+        card("Track \(track)", icon: "waveform", accessory: trackLight(track)) {
             // Full-width card; the three stage buttons are big footswitch-sized pads.
             HStack(spacing: 12) {
                 bigTrackButton(track, .playStop, color: .green)
@@ -261,8 +261,17 @@ struct NUXControlView: View {
 
     private func card<Content: View>(_ title: String, icon: String,
                                      @ViewBuilder content: () -> Content) -> some View {
+        card(title, icon: icon, accessory: EmptyView(), content: content)
+    }
+
+    private func card<Accessory: View, Content: View>(_ title: String, icon: String, accessory: Accessory,
+                                                      @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label(title, systemImage: icon).font(.headline)
+            HStack {
+                Label(title, systemImage: icon).font(.headline)
+                Spacer()
+                accessory
+            }
             content()
         }
         .padding()
@@ -312,36 +321,3 @@ struct NUXControlView: View {
     }
 }
 
-/// What the app's CTRL button does. Default is Stop, like the right-hand CTRL
-/// footswitch on the user's NUX.
-enum CtrlAction: String, CaseIterable, Identifiable {
-    case stop, tapTempo, drumOnOff, track1PlayStop, track2PlayStop, track1Undo, track2Undo, memoryUp, memoryDown
-    var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .stop: "Stop (เหมือนสวิตช์ CTRL บนเครื่อง)"
-        case .tapTempo: "Tap tempo"
-        case .drumOnOff: "กลอง เปิด/ปิด"
-        case .track1PlayStop: "Track 1 Play/Stop"
-        case .track2PlayStop: "Track 2 Play/Stop"
-        case .track1Undo: "Track 1 Undo"
-        case .track2Undo: "Track 2 Undo"
-        case .memoryUp: "Memory +1"
-        case .memoryDown: "Memory −1"
-        }
-    }
-
-    func send(_ midi: StageMIDI) {
-        switch self {
-        case .stop: midi.nuxStop()
-        case .tapTempo: midi.nux(NuxCommands.tapTempo, 1, "CTRL: Tap tempo")
-        case .drumOnOff: midi.nuxDrumToggle()
-        case .track1PlayStop: midi.nuxTrack(1, .playStop)
-        case .track2PlayStop: midi.nuxTrack(2, .playStop)
-        case .track1Undo: midi.nuxTrack(1, .undo)
-        case .track2Undo: midi.nuxTrack(2, .undo)
-        case .memoryUp: midi.nuxStepMemory(1)
-        case .memoryDown: midi.nuxStepMemory(-1)
-        }
-    }
-}

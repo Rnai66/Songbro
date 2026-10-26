@@ -371,8 +371,55 @@ final class StageMIDI {
         if let m = nuxCurrentMemory { nuxCurrentMemory = min(max(m + delta, 1), 99) }
     }
 
+    enum TrackState { case stopped, playing, recording }
+
+    /// What the app believes each looper track is doing (index 0 = Track 1).
+    /// The NUX never reports back, so this follows the buttons pressed here and
+    /// can be corrected by tapping the track's light.
+    private(set) var nuxTrackState: [TrackState] = [.stopped, .stopped]
+
     func nuxTrack(_ track: Int, _ action: NuxCommands.TrackAction) {
         nux(track == 1 ? NuxCommands.track1 : NuxCommands.track2, action.rawValue, "Track \(track): \(action.title)")
+        let i = track - 1
+        switch action {
+        case .playStop: nuxTrackState[i] = nuxTrackState[i] == .playing ? .stopped : .playing
+        case .record: nuxTrackState[i] = .recording
+        case .dub: nuxTrackState[i] = .recording
+        case .clear: nuxTrackState[i] = .stopped
+        case .undo, .redo: break
+        }
+    }
+
+    /// Tap on a track light: playing ↔ stopped, no MIDI sent.
+    func nuxToggleTrackLight(_ track: Int) {
+        let i = track - 1
+        nuxTrackState[i] = nuxTrackState[i] == .stopped ? .playing : .stopped
+    }
+
+    /// CTRL tap: stop everything that's playing. Stopping the drum stops both
+    /// tracks (they follow it); otherwise each playing track gets Play/Stop.
+    /// Everything here is a toggle, so only what the app knows is playing is sent.
+    func nuxStopAll() {
+        if nuxDrumRunning {
+            send(controlChange: NuxCommands.drumOnOff, value: 1, to: .nuxDualLoop)
+            nuxDrumRunning = false
+        } else {
+            for track in 1...2 where nuxTrackState[track - 1] != .stopped {
+                send(controlChange: track == 1 ? NuxCommands.track1 : NuxCommands.track2,
+                     value: UInt8(NuxCommands.TrackAction.playStop.rawValue), to: .nuxDualLoop)
+            }
+        }
+        nuxTrackState = [.stopped, .stopped]
+        note("CTRL: หยุดทั้งหมด", device: .nuxDualLoop)
+    }
+
+    /// CTRL hold: clear both tracks.
+    func nuxClearAll() {
+        for cc in [NuxCommands.track1, NuxCommands.track2] {
+            send(controlChange: cc, value: UInt8(NuxCommands.TrackAction.clear.rawValue), to: .nuxDualLoop)
+        }
+        nuxTrackState = [.stopped, .stopped]
+        note("CTRL ค้าง: เคลียร์ Track 1 และ 2", device: .nuxDualLoop)
     }
 
     func nuxTempo(_ bpm: Int) {
@@ -387,26 +434,6 @@ final class StageMIDI {
     func nuxDrumToggle() {
         nux(NuxCommands.drumOnOff, 1, "กลอง เปิด/ปิด")
         nuxDrumRunning.toggle()
-    }
-
-    /// Like the NUX's CTRL footswitch: stop the drum, and with it both tracks
-    /// (they follow the drum in SYNC mode). The NUX only has an on/off *toggle*
-    /// over MIDI and never reports its state (MIDI Stop and CC30=0 do nothing,
-    /// tested on the real pedal), so this relies on the app's drum light —
-    /// correct it with nuxSetDrumState when the drum was started on the pedal.
-    func nuxStop() {
-        guard nuxDrumRunning else {
-            return note("CTRL: กลองหยุดอยู่แล้ว (ตามไฟในแอป)", device: .nuxDualLoop)
-        }
-        send(controlChange: NuxCommands.drumOnOff, value: 1, to: .nuxDualLoop)
-        nuxDrumRunning = false
-        note("CTRL: Stop", device: .nuxDualLoop)
-    }
-
-    /// Fix the app's idea of the drum state (no MIDI is sent).
-    func nuxSetDrumState(running: Bool) {
-        nuxDrumRunning = running
-        note(running ? "ไฟกลอง: เล่นอยู่" : "ไฟกลอง: หยุด", device: .nuxDualLoop)
     }
 
     func nuxGlobal(_ mode: NuxCommands.GlobalMode, _ label: String) {

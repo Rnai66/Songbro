@@ -5,6 +5,7 @@ struct HomeView: View {
     @Environment(StageMIDI.self) private var midi
     @Environment(SongStore.self) private var store
     @State private var openSongbook = false
+    @State private var showNuxPanel = false
 
     /// Same dark navy as the logo artwork, so the logo sits on a seamless banner.
     private static let logoBackground = Color(red: 0.005, green: 0.032, blue: 0.107)
@@ -41,7 +42,7 @@ struct HomeView: View {
                     .listRowBackground(Self.logoBackground)
                 }
 
-                DeviceSettingsSections()
+                DeviceSettingsSections(openNuxPanel: { showNuxPanel = true })
             }
             .safeAreaInset(edge: .bottom) {
                 Button {
@@ -59,6 +60,9 @@ struct HomeView: View {
                 .background(.bar)
             }
             .toolbar(.hidden, for: .navigationBar)
+        }
+        .sheet(isPresented: $showNuxPanel) {
+            NUXControlView().pageSizedSheet()
         }
         .fullScreenCover(isPresented: $openSongbook) {
             ContentView(onHome: { openSongbook = false })
