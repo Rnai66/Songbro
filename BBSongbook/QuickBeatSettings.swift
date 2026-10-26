@@ -164,6 +164,7 @@ struct QuickBeatSettings: View {
     private func save(_ change: (inout Song) -> Void) {
         var updated = currentSong
         change(&updated)
+        updated.estimated = nil  // the user has now checked this song
         store.upsert(updated)
     }
 

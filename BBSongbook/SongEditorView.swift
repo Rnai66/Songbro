@@ -72,6 +72,7 @@ struct SongEditorView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("บันทึก") {
                         if song.title.isEmpty { song.title = "เพลงไม่มีชื่อ" }
+                        song.estimated = nil
                         store.upsert(song)
                         dismiss()
                     }

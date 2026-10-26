@@ -86,7 +86,7 @@ struct ContentView: View {
                     }
                     HStack(spacing: 8) {
                         if !song.key.isEmpty { Text("คีย์ \(song.key)") }
-                        Text("\(song.bpm) BPM")
+                        Text("\(song.estimated == true ? "≈ " : "")\(song.bpm) BPM")
                         if let rhythm = song.rhythmLabel(for: midi.active) {
                             Text(rhythm).lineLimit(1)
                         }

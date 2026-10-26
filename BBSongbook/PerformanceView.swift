@@ -118,7 +118,7 @@ struct PerformanceView: View {
             Button { showQuickSettings = true } label: {
                 HStack(spacing: 10) {
                     infoChip("คีย์", song.key.isEmpty ? "-" : ChordPro.transposeChord(song.key, by: transpose))
-                    infoChip("BPM", "\(song.bpm)")
+                    infoChip("BPM", "\(song.estimated == true ? "≈" : "")\(song.bpm)")
                     infoChip(midi.active == .nuxDualLoop ? "NUX ▾" : "จังหวะ ▾",
                              song.rhythmLabel(for: midi.active) ?? "แตะเพื่อเลือก")
                 }

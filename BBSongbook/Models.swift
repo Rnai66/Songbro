@@ -55,12 +55,15 @@ struct Song: Codable, Hashable, Identifiable {
     var lyrics = ""
     /// Lyric sheet image, relative to the FolderLibrary root (nil = typed lyrics).
     var filePath: String?
+    /// Beat/BPM were filled in automatically and not checked yet (shown as "≈").
+    var estimated: Bool?
 
     /// "Thai Style › Morlum 1" for BeatBuddy, "Memory 07" for NUX, nil if not set.
     func rhythmLabel(for device: StageDevice) -> String? {
-        switch device {
+        let label: String? = switch device {
         case .beatBuddy: BeatCatalog.bundled.label(folder: beatFolder, beat: beatNumber)
         case .nuxDualLoop: nuxMemory.map { String(format: "Memory %02d", $0) }
         }
+        return label.map { estimated == true ? "≈ " + $0 : $0 }
     }
 }
