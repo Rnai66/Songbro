@@ -272,7 +272,7 @@ final class StageMIDI {
     }
 
     /// The NUX drum only has an on/off toggle, so remember what we last told it.
-    private var nuxDrumRunning = false
+    private(set) var nuxDrumRunning = false
 
     func start() {
         paused = false
@@ -389,27 +389,24 @@ final class StageMIDI {
         nuxDrumRunning.toggle()
     }
 
-    /// Like the NUX's right-hand CTRL footswitch (set to STOP): MIDI Stop, and
-    /// the drum off if the app last turned it on. The manual has no "stop all"
-    /// CC, so this relies on the NUX honouring MIDI Stop.
+    /// Like the NUX's CTRL footswitch: stop the drum, and with it both tracks
+    /// (they follow the drum in SYNC mode). The NUX only has an on/off *toggle*
+    /// over MIDI and never reports its state (MIDI Stop and CC30=0 do nothing,
+    /// tested on the real pedal), so this relies on the app's drum light —
+    /// correct it with nuxSetDrumState when the drum was started on the pedal.
     func nuxStop() {
-        send(realtime: 0xFC, to: .nuxDualLoop)
-        if nuxDrumRunning {
-            send(controlChange: NuxCommands.drumOnOff, value: 1, to: .nuxDualLoop)
-            nuxDrumRunning = false
+        guard nuxDrumRunning else {
+            return note("CTRL: กลองหยุดอยู่แล้ว (ตามไฟในแอป)", device: .nuxDualLoop)
         }
+        send(controlChange: NuxCommands.drumOnOff, value: 1, to: .nuxDualLoop)
+        nuxDrumRunning = false
         note("CTRL: Stop", device: .nuxDualLoop)
     }
 
-    /// Diagnostics: which single message really stops the NUX, whatever its state.
-    func nuxTestMidiStopOnly() {
-        send(realtime: 0xFC, to: .nuxDualLoop)
-        note("ทดสอบ: MIDI Stop อย่างเดียว", device: .nuxDualLoop)
-    }
-
-    func nuxTestDrumValueZero() {
-        send(controlChange: NuxCommands.drumOnOff, value: 0, to: .nuxDualLoop)
-        note("ทดสอบ: CC30 ค่า 0", device: .nuxDualLoop)
+    /// Fix the app's idea of the drum state (no MIDI is sent).
+    func nuxSetDrumState(running: Bool) {
+        nuxDrumRunning = running
+        note(running ? "ไฟกลอง: เล่นอยู่" : "ไฟกลอง: หยุด", device: .nuxDualLoop)
     }
 
     func nuxGlobal(_ mode: NuxCommands.GlobalMode, _ label: String) {

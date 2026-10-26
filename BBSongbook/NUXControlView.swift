@@ -112,6 +112,16 @@ struct NUXControlView: View {
     private var ctrlButton: some View {
         let action = CtrlAction(rawValue: ctrlAction) ?? .stop
         return VStack(spacing: 6) {
+            // Tap to match the pedal when the drum was started/stopped on the NUX itself.
+            Button {
+                midi.nuxSetDrumState(running: !midi.nuxDrumRunning)
+            } label: {
+                Label(midi.nuxDrumRunning ? "กลอง: เล่นอยู่" : "กลอง: หยุด",
+                      systemImage: midi.nuxDrumRunning ? "circle.fill" : "circle")
+                    .font(.caption.bold())
+                    .foregroundStyle(midi.nuxDrumRunning ? .green : .secondary)
+            }
+            .buttonStyle(.plain)
             Button { action.send(midi) } label: {
                 Label(action == .stop ? "CTRL · Stop" : "CTRL",
                       systemImage: action == .stop ? "stop.fill" : "circle.circle")
@@ -226,13 +236,6 @@ struct NUXControlView: View {
             levelSlider("Master", value: $master, range: 0...127) { midi.nux(NuxCommands.master, $0, "Master \($0)") }
             levelSlider("Headphones", value: $headphones, range: 0...127) { midi.nux(NuxCommands.headphones, $0, "Headphones \($0)") }
             levelSlider("ความสว่างจอ", value: $brightness, range: 0...10) { midi.nux(NuxCommands.brightness, $0, "Brightness \($0)") }
-            Divider()
-            Text("ทดสอบการหยุด (เปิดกลองจากตัวเครื่องก่อน แล้วกดทีละปุ่ม)").font(.subheadline.bold())
-            HStack {
-                Button("① MIDI Stop อย่างเดียว") { midi.nuxTestMidiStopOnly() }
-                Button("② CC30 ค่า 0") { midi.nuxTestDrumValueZero() }
-            }
-            .buttonStyle(.bordered)
             }
             .padding(.top, 12)
         } label: {
