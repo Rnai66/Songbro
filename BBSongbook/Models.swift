@@ -72,6 +72,8 @@ struct Song: Codable, Hashable, Identifiable {
     var filePath: String?
     /// Beat/BPM were filled in automatically and not checked yet (shown as "≈").
     var estimated: Bool?
+    /// Musical style found by the AI beat search ("ลูกทุ่ง", "Pop Rock").
+    var style: String?
 
     /// "Thai Style › Morlum 1" for BeatBuddy, "Memory 07" for NUX, nil if not set.
     func rhythmLabel(for device: StageDevice) -> String? {

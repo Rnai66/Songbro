@@ -30,6 +30,14 @@ struct KnownBeats {
             .sorted { $0.key.count > $1.key.count }
     }
 
+    /// A spread of the user's own picks, used to show the AI how they choose beats.
+    func examples(limit: Int) -> [Entry] {
+        let all = exact.values.sorted { $0.title < $1.title }
+        guard all.count > limit else { return all }
+        let step = Double(all.count) / Double(limit)
+        return (0..<limit).map { all[Int(Double($0) * step)] }
+    }
+
     /// The table row for a song file name like "6-สบายสบาย-เบิร์ด" or "Fly Me To The Moon-Dm".
     func lookup(_ title: String) -> Entry? {
         let key = Self.normalize(title)

@@ -8,6 +8,7 @@ struct ContentView: View {
     @Environment(SongStore.self) private var store
     @Environment(StageMIDI.self) private var midi
     @Environment(FolderLibrary.self) private var library
+    @Environment(AIBeatFinder.self) private var ai
     @Environment(\.scenePhase) private var scenePhase
     @State private var pickingFolder = false
 
@@ -110,7 +111,9 @@ struct ContentView: View {
             }
             .searchable(text: $search, prompt: "ค้นหาเพลง")
             .navigationTitle(category?.isEmpty == false ? category! : "ทุกเพลง")
+            .safeAreaInset(edge: .top) { aiProgress }
             .toolbar {
+                aiMenu
                 Button {
                     var song = Song(title: "")
                     if let category, !category.isEmpty { song.category = category }
@@ -149,6 +152,50 @@ struct ContentView: View {
             refreshLibrary()
             category = FolderLibrary.importFolder
             selectedID = store.songs.first { $0.filePath == file.path }?.id
+        }
+    }
+
+    /// ✨ menu: look up beats with Gemini for the songs in this list.
+    private var aiMenu: some View {
+        let missing = songs.filter { $0.beatFolder == nil }
+        let estimated = songs.filter { $0.beatFolder == nil || $0.estimated == true }
+        return Menu {
+            if !ai.hasKey {
+                Text("ใส่ Gemini API key ที่หน้าแรกก่อน")
+            }
+            Button("ค้นเพลงที่ยังไม่มีจังหวะ (\(missing.count))", systemImage: "sparkles") {
+                ai.findAll(missing, in: store)
+            }
+            .disabled(missing.isEmpty || !ai.hasKey || ai.batchRunning)
+            Button("ค้นใหม่รวมเพลงที่เป็น ≈ (\(estimated.count))", systemImage: "sparkles.rectangle.stack") {
+                ai.findAll(estimated, in: store)
+            }
+            .disabled(estimated.isEmpty || !ai.hasKey || ai.batchRunning)
+        } label: {
+            Label("AI ค้นหาจังหวะ", systemImage: "sparkles")
+        }
+    }
+
+    @ViewBuilder private var aiProgress: some View {
+        if ai.batchRunning || ai.batchError != nil {
+            HStack(spacing: 10) {
+                if ai.batchRunning {
+                    ProgressView(value: Double(ai.batchDone), total: Double(max(ai.batchTotal, 1)))
+                        .frame(width: 80)
+                    Text("✨ \(ai.batchDone)/\(ai.batchTotal) \(ai.batchCurrent)")
+                        .font(.caption).lineLimit(1)
+                    Spacer()
+                    Button("หยุด") { ai.cancelBatch() }.font(.caption.bold())
+                } else if let error = ai.batchError {
+                    Text("✨ หยุดที่ \(ai.batchDone)/\(ai.batchTotal): \(error)")
+                        .font(.caption).foregroundStyle(.red).lineLimit(2)
+                    Spacer()
+                    Button("ปิด") { ai.batchError = nil }.font(.caption.bold())
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 6)
+            .background(.bar)
         }
     }
 

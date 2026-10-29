@@ -43,6 +43,7 @@ struct HomeView: View {
                 }
 
                 DeviceSettingsSections(openNuxPanel: { showNuxPanel = true })
+                AISettingsSection()
             }
             .safeAreaInset(edge: .bottom) {
                 Button {

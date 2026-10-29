@@ -7,13 +7,19 @@ struct QuickBeatSettings: View {
 
     @Environment(SongStore.self) private var store
     @Environment(StageMIDI.self) private var midi
+    @Environment(AIBeatFinder.self) private var ai
     @Environment(\.dismiss) private var dismiss
+    @State private var aiSuggestion: AIBeatFinder.Suggestion?
+    @State private var aiSearching = false
+    @State private var aiError: String?
 
     private let catalog = BeatCatalog.bundled
 
     var body: some View {
         NavigationStack {
             Form {
+                aiSection
+
                 Section("BPM") {
                     HStack {
                         Text("\(song.bpm)")
@@ -106,6 +112,71 @@ struct QuickBeatSettings: View {
             }
         }
         .navigationTitle(folder.name)
+    }
+
+    /// Ask Gemini for this song's BPM, style and closest beat; nothing changes until "ใช้ค่านี้".
+    private var aiSection: some View {
+        Section {
+            if !ai.hasKey {
+                Label("ใส่ Gemini API key ที่หน้าแรก › AI ค้นหาจังหวะ ก่อน", systemImage: "key")
+                    .foregroundStyle(.secondary)
+            } else if aiSearching {
+                HStack {
+                    ProgressView()
+                    Text("กำลังค้นหาข้อมูลเพลง…").foregroundStyle(.secondary)
+                }
+            } else {
+                Button("ค้นหาจังหวะด้วย AI", systemImage: "sparkles", action: runAI)
+            }
+            if let aiError {
+                Text(aiError).font(.caption).foregroundStyle(.red)
+            }
+            if let s = aiSuggestion {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text([s.style, s.timeSignature, s.bpm.map { "\($0) BPM" }, s.key.isEmpty ? nil : "คีย์ \(s.key)"]
+                        .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                        .font(.headline)
+                    if let beat = catalog.label(folder: s.folder, beat: s.beat) {
+                        Label(beat, systemImage: "music.note")
+                    }
+                    if let kit = s.drumSet, let name = catalog.drumSetName(kit) {
+                        Label("กลอง \(name)", systemImage: "circle.grid.2x2")
+                    }
+                    if !s.artist.isEmpty { Text("ศิลปิน: \(s.artist)").font(.subheadline) }
+                    if !s.note.isEmpty {
+                        Text(s.note).font(.caption).foregroundStyle(.secondary)
+                    }
+                    if !s.confidence.isEmpty {
+                        Text("ความมั่นใจ: \(s.confidence)").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                Button("ใช้ค่านี้", systemImage: "checkmark.circle.fill") {
+                    var updated = currentSong
+                    AIBeatFinder.apply(s, to: &updated)
+                    store.upsert(updated)
+                    midi.load(updated)
+                    aiSuggestion = nil
+                }
+                .font(.headline)
+            }
+        } header: {
+            Text("AI ค้นหาจังหวะ · Gemini")
+        } footer: {
+            if let style = currentSong.style, aiSuggestion == nil {
+                Text("สไตล์: \(style)")
+            }
+        }
+    }
+
+    private func runAI() {
+        aiSearching = true
+        aiError = nil
+        aiSuggestion = nil
+        Task {
+            do { aiSuggestion = try await ai.suggest(for: currentSong) }
+            catch { aiError = error.localizedDescription }
+            aiSearching = false
+        }
     }
 
     /// BeatBuddy kit sound for this song; sent right away and every time the song opens.

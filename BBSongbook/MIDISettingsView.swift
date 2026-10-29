@@ -11,6 +11,7 @@ struct MIDISettingsView: View {
         NavigationStack {
             Form {
                 DeviceSettingsSections(openNuxPanel: { showNuxPanel = true })
+                AISettingsSection()
             }
             .navigationTitle("อุปกรณ์ MIDI")
             .navigationBarTitleDisplayMode(.inline)
