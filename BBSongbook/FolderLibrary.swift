@@ -21,6 +21,9 @@ final class FolderLibrary {
 
     private(set) var rootURL: URL = .documentsDirectory
     private(set) var isLinked = false
+    /// The single folder wrapping every sheet ("Local Files"), left out of categories.
+    /// New sheets go inside it so they don't add a second top-level folder.
+    private(set) var wrapperFolder: String?
 
     var rootName: String {
         isLinked ? rootURL.lastPathComponent : "ในเครื่อง › BB Songbook"
@@ -84,49 +87,80 @@ final class FolderLibrary {
                                      category: folders.joined(separator: " › "),
                                      title: (name as NSString).deletingPathExtension))
         }
-        return Self.droppingWrapperFolder(files)
+        let (sheets, wrapper) = Self.droppingWrapperFolder(files)
+        wrapperFolder = wrapper
+        return sheets
     }
 
     /// Every sheet sits in its folder path ("Event 15 › set1"). A single folder
     /// wrapping everything (e.g. "Local Files" copied from another app) is left out.
-    private static func droppingWrapperFolder(_ files: [LibraryFile]) -> [LibraryFile] {
+    private static func droppingWrapperFolder(_ files: [LibraryFile]) -> ([LibraryFile], String?) {
         let prefixes = Set(files.map { $0.category.components(separatedBy: " › ").first ?? "" })
         let strip = prefixes.count == 1 && !(prefixes.first ?? "").isEmpty
-        return files.map { file in
+        let sheets = files.map { file in
             var parts = file.category.isEmpty ? [] : file.category.components(separatedBy: " › ")
             if strip { parts.removeFirst() }
             var copy = file
             copy.category = parts.isEmpty ? "ทั่วไป" : parts.joined(separator: " › ")
             return copy
         }
+        return (sheets, strip ? prefixes.first : nil)
     }
 
     /// Folder that sheets sent from other apps ("Open in BB Songbook") land in.
     static let importFolder = "นำเข้า"
 
-    /// Copies a sheet another app sent us into "<root>/นำเข้า", never overwriting.
-    func importFile(_ url: URL) -> LibraryFile? {
+    /// Copies a sheet (from another app or the Files picker) into the category's
+    /// folder, "นำเข้า" by default, never overwriting.
+    func importFile(_ url: URL, into category: String = importFolder) -> LibraryFile? {
         guard Self.imageExtensions.contains(url.pathExtension.lowercased()) else { return nil }
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
-        let fm = FileManager.default
-        let folder = rootURL.appending(path: Self.importFolder)
-        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
-        let title = url.deletingPathExtension().lastPathComponent
-        var dest = folder.appending(path: url.lastPathComponent)
-        var n = 2
-        while fm.fileExists(atPath: dest.path) {
-            dest = folder.appending(path: "\(title) (\(n)).\(url.pathExtension)")
-            n += 1
-        }
+        let dest = freeDestination(name: url.deletingPathExtension().lastPathComponent,
+                                   ext: url.pathExtension, category: category)
         var copied = false
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: nil) { source in
-            copied = (try? fm.copyItem(at: source, to: dest)) != nil
+            copied = (try? FileManager.default.copyItem(at: source, to: dest)) != nil
         }
-        guard copied else { return nil }
-        return LibraryFile(path: "\(Self.importFolder)/\(dest.lastPathComponent)",
-                           category: Self.importFolder,
-                           title: dest.deletingPathExtension().lastPathComponent)
+        return copied ? libraryFile(at: dest, category: category) : nil
+    }
+
+    /// Saves image data (e.g. from the Photos library) as a new sheet.
+    func importImage(_ data: Data, name: String, ext: String, into category: String) -> LibraryFile? {
+        let dest = freeDestination(name: name, ext: ext, category: category)
+        guard (try? data.write(to: dest)) != nil else { return nil }
+        return libraryFile(at: dest, category: category)
+    }
+
+    /// "<root>/<wrapper>/<category folders>/<name>.<ext>", adding " (2)" if taken.
+    private func freeDestination(name: String, ext: String, category: String) -> URL {
+        let fm = FileManager.default
+        let parts = category.components(separatedBy: " › ")
+            .map { $0.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "/", with: "-") }
+            .filter { !$0.isEmpty }
+        var folder = rootURL
+        for part in [wrapperFolder].compactMap({ $0 }) + (parts.isEmpty ? [Self.importFolder] : parts) {
+            folder = folder.appending(path: part)
+        }
+        try? fm.createDirectory(at: folder, withIntermediateDirectories: true)
+        let safeName = name.replacingOccurrences(of: "/", with: "-")
+        var dest = folder.appending(path: "\(safeName).\(ext)")
+        var n = 2
+        while fm.fileExists(atPath: dest.path) {
+            dest = folder.appending(path: "\(safeName) (\(n)).\(ext)")
+            n += 1
+        }
+        return dest
+    }
+
+    private func libraryFile(at url: URL, category: String) -> LibraryFile {
+        let root = rootURL.resolvingSymlinksInPath().pathComponents
+        let path = url.resolvingSymlinksInPath().pathComponents.dropFirst(root.count).joined(separator: "/")
+        let folders = url.deletingLastPathComponent().resolvingSymlinksInPath().pathComponents
+            .dropFirst(root.count).dropFirst(wrapperFolder == nil ? 0 : 1)
+        return LibraryFile(path: path,
+                           category: folders.isEmpty ? "ทั่วไป" : folders.joined(separator: " › "),
+                           title: url.deletingPathExtension().lastPathComponent)
     }
 
     /// Loads a sheet, downloading it from iCloud first if needed.

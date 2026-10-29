@@ -132,7 +132,7 @@ struct ContentView: View {
                                        description: Text("แตะเพลงทางซ้ายเพื่อเปิดเนื้อเพลง"))
             }
         }
-        .sheet(item: $editing) { song in
+        .sheet(item: $editing, onDismiss: refreshLibrary) { song in
             SongEditorView(song: song)
                 .pageSizedSheet()
         }

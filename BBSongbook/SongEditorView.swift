@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -6,8 +7,14 @@ struct SongEditorView: View {
 
     @Environment(SongStore.self) private var store
     @Environment(StageMIDI.self) private var midi
+    @Environment(FolderLibrary.self) private var library
     @Environment(\.dismiss) private var dismiss
     @State private var importing = false
+    @State private var importingImage = false
+    @State private var photo: PhotosPickerItem?
+    @State private var importError: String?
+    /// Image copied in while editing; removed again if the user cancels.
+    @State private var importedPath: String?
 
     private let catalog = BeatCatalog.bundled
 
@@ -48,6 +55,20 @@ struct SongEditorView: View {
                     }
                 } else {
                 Section {
+                    Button("เลือกไฟล์รูป (.png / .jpg / .heic)", systemImage: "folder") { importingImage = true }
+                    PhotosPicker(selection: $photo, matching: .images) {
+                        Label("เลือกจากแอปรูปภาพ", systemImage: "photo.on.rectangle")
+                    }
+                    if let importError {
+                        Text(importError).font(.caption).foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("รูปเนื้อเพลง")
+                } footer: {
+                    Text("รูปจะถูกคัดลอกเข้าโฟลเดอร์ของหมวด \"\(song.category)\" ในแอป · ถ้าใช้รูปแล้วไม่ต้องพิมพ์เนื้อเพลงด้านล่าง")
+                }
+
+                Section {
                     TextEditor(text: $song.lyrics)
                         .font(.system(.body, design: .monospaced))
                         .frame(minHeight: 320)
@@ -67,7 +88,12 @@ struct SongEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("ยกเลิก") { dismiss() }
+                    Button("ยกเลิก") {
+                        if let importedPath {
+                            try? FileManager.default.removeItem(at: library.rootURL.appending(path: importedPath))
+                        }
+                        dismiss()
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("บันทึก") {
@@ -87,7 +113,44 @@ struct SongEditorView: View {
                     if song.title.isEmpty { song.title = url.deletingPathExtension().lastPathComponent }
                 }
             }
+            .background {
+                // A second importer on the same view would replace the first one.
+                Color.clear.fileImporter(isPresented: $importingImage, allowedContentTypes: [.image]) { result in
+                    guard case .success(let url) = result else { return }
+                    attach(library.importFile(url, into: categoryForImport))
+                }
+            }
+            .onChange(of: photo) { _, item in
+                guard let item else { return }
+                Task {
+                    let data = try? await item.loadTransferable(type: Data.self)
+                    let ext = item.supportedContentTypes.first?.preferredFilenameExtension ?? "jpg"
+                    let name = song.title.isEmpty
+                        ? "รูป " + Date.now.formatted(.dateTime.year().month().day().hour().minute())
+                        : song.title
+                    attach(data.flatMap { library.importImage($0, name: name, ext: ext, into: categoryForImport) })
+                    photo = nil
+                }
+            }
         }
+    }
+
+    private var categoryForImport: String {
+        let c = song.category.trimmingCharacters(in: .whitespaces)
+        return c.isEmpty || c == "ทั่วไป" ? FolderLibrary.importFolder : c
+    }
+
+    /// The song now shows the imported image instead of typed lyrics.
+    private func attach(_ file: LibraryFile?) {
+        guard let file else {
+            importError = "นำเข้ารูปไม่ได้ ลองเลือกใหม่อีกครั้ง"
+            return
+        }
+        importError = nil
+        importedPath = file.path
+        song.filePath = file.path
+        song.category = file.category
+        if song.title.isEmpty { song.title = file.title }
     }
 
     /// Picking a beat folder resets the beat to that folder's first beat.
